@@ -16,24 +16,23 @@
 (define table0
   (list tuple0 tuple1))
 
-; (select where table)
-(define select filter)
-
-(define (select-all table)
-  (define match-all (lambda (x) #t))
-  (select match-all table))
-
-; (select-all table0)
-; => (((name . "kame") (age . 3)) ((name . "kuro") (age . 5)))
-
-
-
-(define (where= symb value)
-  (lambda (tuple)
-	(= (cdr (assoc 'age tuple)) value)))
-
-;(select1 table0 (where= 'age 3))
-;(((name . "kame") (age . 3)))
-
-(define (select1 table where)
+;select implementation
+(define (select table where)
   (filter where table))
+
+;general where clause
+;n-ary condition and n-symbols
+(define (where-pred symbs condition)
+  (lambda (tuple)
+	(apply condition
+	 (map
+	  (lambda (symb)
+		(cdr (assoc symb tuple)))
+	  symbs))))
+
+;equality condition
+; (select table0 (where= 'age 3))
+; => (((name . "kame") (age . 3)))
+(define (where= symb value)
+  (where-pred (list symb) (lambda (x) (= x value))))
+
