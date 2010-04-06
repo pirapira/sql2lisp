@@ -1,0 +1,7 @@
+$ gosh -l ./sql2lisp.scm
+gosh> table0
+(((name . "kame") (age . 3)) ((name . "kuro") (age . 5)))
+gosh> (select table0 (where= 'age 3))
+(((name . "kame") (age . 3)))
+gosh> (update table0 '((name . "taro")) (where= 'name "kuro"))
+(((name . "kame") (age . 3)) ((name . "taro") (age . 5)))
