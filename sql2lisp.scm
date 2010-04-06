@@ -43,5 +43,5 @@
 
 
 
-;;; SQL to Scheme compiler
+;;; SQL to lisp compiler
 
