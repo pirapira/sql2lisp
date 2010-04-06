@@ -1,4 +1,6 @@
 ;;;;; SQL を lisp にしたい
+;(select table0 (where= 'age 3)) 的な
+;しかし，なんか逆のことをしている気がしてきたので撤退．
 
 (use gauche.collection)
 
@@ -35,4 +37,11 @@
 ; => (((name . "kame") (age . 3)))
 (define (where= symb value)
   (where-pred (list symb) (lambda (x) (= x value))))
+
+
+;;; SQL parser
+
+
+
+;;; SQL to Scheme compiler
 
