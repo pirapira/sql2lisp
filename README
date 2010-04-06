@@ -1,3 +1,5 @@
+with Gauche 0.8.13
+
 $ gosh -l ./sql2lisp.scm
 gosh> table0
 (((name . "kame") (age . 3)) ((name . "kuro") (age . 5)))
