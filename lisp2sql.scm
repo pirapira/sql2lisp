@@ -13,7 +13,7 @@
   (let ((conn (dbi-connect "dbi:sqlite3:db=:memory:"))
 		 )
 	(dbi-do conn "CREATE TABLE mail (num int)")
-	(dbi-do conn "INSERT INTO hoge VALUES (8)")
+	(dbi-do conn "INSERT INTO mail VALUES (8)")
 	conn))
 
 (define (exec-sql sql)
@@ -23,9 +23,9 @@
 (define (exec-lisp lisp)
 	(eval 
 	 `(let ((conn (create-db))
-			(hoge
+			(mail
 			 (lambda ()
-			   (map values (dbi-do conn "SELECT * from hoge"))))
+			   (map values (dbi-do conn "SELECT * from mail"))))
 			)
 		,lisp)
 	 (interaction-environment)))
@@ -40,7 +40,7 @@
 (define (test-exec-sql)
   (define (test-exec-sql-inner sql)
 	(map-equal? (exec-sql sql) (exec-sql sql)))
-  (test-exec-sql-inner "select * from hoge"))
+  (test-exec-sql-inner "select * from mail"))
 
 ;; a test to fail
 (define (failing-test) #f)
@@ -51,8 +51,8 @@
 
 (define (sql-lisp-simplest-test)
   (compare-sql-lisp
-   "select * from hoge"
-   '(hoge)))
+   "select * from mail"
+   '(mail)))
 
 (define tests
   (list
