@@ -12,7 +12,7 @@
 (define (create-db)
   (let ((conn (dbi-connect "dbi:sqlite3:db=:memory:"))
 		 )
-	(dbi-do conn "CREATE TABLE hoge (num int)")
+	(dbi-do conn "CREATE TABLE mail (num int)")
 	(dbi-do conn "INSERT INTO hoge VALUES (8)")
 	conn))
 
@@ -68,4 +68,3 @@
 
 (test)
 
-  
