@@ -1,4 +1,5 @@
 - ask Hoshino-san about the example 7 (sort, join)
-- execute Hoshino-san's examples
+  - send the already written mail
 - rewrite lisp for example 4
   - write group-by (get the return multiple values of span!)
+- execute Hoshino-san's examples
