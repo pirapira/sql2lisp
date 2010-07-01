@@ -12,8 +12,8 @@
 (define (create-db)
   (let ((conn (dbi-connect "dbi:sqlite3:db=:memory:"))
 		 )
-	(dbi-do conn "CREATE TABLE mail (num int)")
-	(dbi-do conn "INSERT INTO mail VALUES (8)")
+	(dbi-do conn "CREATE TABLE mail (num int, from_addr string)")
+	(dbi-do conn "INSERT INTO mail VALUES (8, 'john@example.com')")
 	conn))
 
 (define (exec-sql sql)
@@ -22,7 +22,7 @@
 
 (define (exec-lisp lisp)
 	(eval 
-	 `(let ((conn (create-db))
+	 `(let* ((conn (create-db))
 			(mail
 			 (lambda ()
 			   (map values (dbi-do conn "SELECT * from mail"))))
@@ -54,11 +54,21 @@
    "select * from mail"
    '(mail)))
 
+;; excersize problems
+(define (ex->test ex)
+  (compare-sql-lisp (cdr ex) (car ex)))
+
+(load "./samples")
+
 (define tests
   (list
    test-exec-sql
    sql-lisp-simplest-test
-;   failing-test
+;   failing-test ; enable this test to see error.
+;   (ex->test ex1)
+;   (ex->test ex2)
+;   (ex->test ex3)
+;   (ex->test ex5)
    ))
 
 (define (test)

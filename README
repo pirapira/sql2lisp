@@ -1,9 +1,6 @@
 with Gauche 0.8.13
+with Gauche-dbd-sqlite3 0.1.3 
+     available at http://practical-scheme.net/wiliki/wiliki.cgi?kikuchi
 
+to run tests (comparing SQL result and lisp result)
 $ gosh -l ./sql2lisp.scm
-gosh> table0
-(((name . "kame") (age . 3)) ((name . "kuro") (age . 5)))
-gosh> (select table0 (where= 'age 3))
-(((name . "kame") (age . 3)))
-gosh> (update table0 '((name . "taro")) (where= 'name "kuro"))
-(((name . "kame") (age . 3)) ((name . "taro") (age . 5)))
