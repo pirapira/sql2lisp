@@ -8,13 +8,14 @@
 (use dbi)
 (use dbd.sqlite3)
 (use gauche.collection)
+(use srfi-13)
 
 (define (create-db)
   (let ((conn (dbi-connect "dbi:sqlite3:db=:memory:"))
 		 )
-	(dbi-do conn "CREATE TABLE mail (num int, from_addr string)")
-	(dbi-do conn "INSERT INTO mail VALUES (8, 'john@example.com')")
-	(dbi-do conn "INSERT INTO mail VALUES (8, 'bob@example.com')")
+	(dbi-do conn "CREATE TABLE mail (num int, from_addr string, date string)")
+	(dbi-do conn "INSERT INTO mail VALUES (8, 'john@example.com', '2010-04-07')")
+	(dbi-do conn "INSERT INTO mail VALUES (8, 'bob@example.com', '2010-06-07')")
 	conn))
 
 (define (exec-sql sql)
@@ -48,7 +49,11 @@
 
 ;; the main tests
 (define (compare-sql-lisp sql lisp)
-  (map-equal? (exec-sql sql) (exec-lisp lisp)))
+  (let ((s (exec-sql sql))
+	(l (exec-lisp lisp)))
+    (print 's (map values s))
+    (print 'l l)
+    (map-equal? s l)))
 
 (define (sql-lisp-simplest-test)
   (compare-sql-lisp
@@ -67,7 +72,7 @@
    sql-lisp-simplest-test
 ;   failing-test ;uncomment this line to see error.
    (ex->test ex1)
-;   (ex->test ex2)
+   (ex->test ex2)
 ;   (ex->test ex3)
 ;   (ex->test ex5)
    ))

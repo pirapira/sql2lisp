@@ -46,7 +46,7 @@
 ;; > > (filter)
 (cons
 '(filter (lambda (x) (equal? (vector-ref x 1) "john@example.com")) (mail))
-;; cadr, とかなんとかならんか．
+;; vector-ref 使わずにすまないか．
 
 "select * from mail where from_addr='john@example.com'"
 ))
@@ -61,10 +61,10 @@
 ;; > > (sort)
 (cons
 ;; input:
-'(sort (lambda (x y) (< (date x) (date y))) (mail))
+'(sort (mail) (lambda (x y) (string-ci< (vector-ref x 2) (vector-ref y 2))))
 
 ;; output:
-"select * from mail order by date"
+"select * from mail order by date asc"
 ))
 
 (define ex3

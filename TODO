@@ -3,3 +3,4 @@
   - write group-by (get the return multiple values of span!)
 - execute Hoshino-san's examples
 - impliment the Scheme version of group-by.  New table should contain rows like max(***) and count(***)
+- use Scheme native date values.
