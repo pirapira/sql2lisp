@@ -104,11 +104,11 @@
 ;; > > (filter, map, sort)
 (cons 
 ;; input:
-'(take (sort (lambda (x y) (> (date x) (date y))) (mail)) 20)
+'(take* (sort (mail) (lambda (x y) (string-ci> (vector-ref x 2) (vector-ref y 2)))) 20)
 ;; [評価順序はとりあえず無視 ← やはりHaskellがいいのではないか]
 
 ;; output:
-"select * from mail where date >= currentdate() - 14 order by date desc limit 20"
+"select * from mail order by date desc limit 20"
 ))
 
 ;; > > ----------------------------------------

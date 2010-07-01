@@ -8,7 +8,9 @@
 (use dbi)
 (use dbd.sqlite3)
 (use gauche.collection)
+(use srfi-1)
 (use srfi-13)
+(use util.list)
 
 (define (create-db)
   (let ((conn (dbi-connect "dbi:sqlite3:db=:memory:"))
@@ -74,7 +76,7 @@
    (ex->test ex1)
    (ex->test ex2)
 ;   (ex->test ex3)
-;   (ex->test ex5)
+   (ex->test ex5)
    ))
 
 (define (test)
