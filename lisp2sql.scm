@@ -57,7 +57,7 @@
 
 ;; excersize problems
 (define (ex->test ex)
-  (compare-sql-lisp (cdr ex) (car ex)))
+  (lambda () (compare-sql-lisp (cdr ex) (car ex))))
 
 (load "./samples")
 
@@ -65,7 +65,7 @@
   (list
    test-exec-sql
    sql-lisp-simplest-test
-;   failing-test ; enable this test to see error.
+;   failing-test ;uncomment this line to see error.
    (ex->test ex1)
 ;   (ex->test ex2)
 ;   (ex->test ex3)

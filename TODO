@@ -1,5 +1,5 @@
+- change exec-lisp so that accessors like (column from_addr row) is available.
 - rewrite lisp for example 4
   - write group-by (get the return multiple values of span!)
 - execute Hoshino-san's examples
 - impliment the Scheme version of group-by.  New table should contain rows like max(***) and count(***)
-

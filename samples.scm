@@ -45,7 +45,7 @@
 ;; > > 差出人が john@example.com のメールを全件取得。; modified by yh
 ;; > > (filter)
 (cons
-'(filter (lambda (x) (= (cadr x) "john@example.com")) (mail))
+'(filter (lambda (x) (equal? (vector-ref x 1) "john@example.com")) (mail))
 ;; cadr, とかなんとかならんか．
 
 "select * from mail where from_addr='john@example.com'"
