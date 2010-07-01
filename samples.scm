@@ -45,8 +45,8 @@
 ;; > > 差出人が john@example.com のメールを全件取得。; modified by yh
 ;; > > (filter)
 (cons
-'(filter (lambda (x) (= (from_addr x) "john@example.com")) (mail))
-;; [評価順序はとりあえず無視]
+'(filter (lambda (x) (= (cadr x) "john@example.com")) (mail))
+;; cadr, とかなんとかならんか．
 
 "select * from mail where from_addr='john@example.com'"
 ))
