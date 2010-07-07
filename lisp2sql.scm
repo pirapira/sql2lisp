@@ -44,3 +44,6 @@
 
 ;; [f] implimentation
 ; more difficult because it involves parsing.
+
+; input (lambda (row) (equal? 3 ((relation-accessor r) s row)))
+; output S = 3
