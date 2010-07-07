@@ -43,7 +43,12 @@
     (lambda (row0 row1) (< (acc row0) (acc row1)))))
 
 ;; [f] implimentation
+; predicate transformer from S-exp to SQL
 ; more difficult because it involves parsing.
 
 ; input (lambda (row) (equal? 3 ((relation-accessor r) s row)))
 ; output S = 3
+
+; input (lambda (row) (rxmatch (string->regexp "^hs*") ((relation-accessor r) s row)))
+; output S IS LIKE "hs%"
+
