@@ -1,7 +1,5 @@
-- change exec-lisp so that accessors like (column from_addr row) is available.
-- rewrite lisp for example 4
-  - write group-by (get the return multiple values of span!)
-    - group-collection usable?
-- execute Hoshino-san's examples
-- impliment the Scheme version of group-by.  New table should contain rows like max(***) and count(***)
+- (test.scm) change exec-lisp so that accessors like (column from_addr row) is available
+- (samples.scm -> 星野さん) rewrite lisp for example 4
+- implement the Scheme version of group-by.  New table should contain rows like max(***) and count(***)
 - use Scheme native date values.
+- write [f] implimentation in lisp2sql.scm

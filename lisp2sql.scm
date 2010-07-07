@@ -29,7 +29,6 @@
 ; For s0, ... sn, the order is relevant to the results.
 ; 
 
-
 (use util.relation)
 
 (define (assert b)
@@ -40,5 +39,8 @@
   ; s: column name
   ; r: relation
   (assert (member s (relation-column-names r)))
-  (let ((acc (lambda (row) (relation-accessor s row))))
+  (let ((acc (lambda (row) ((relation-accessor r) s row))))
     (lambda (row0 row1) (< (acc row0) (acc row1)))))
+
+;; [f] implimentation
+; more difficult because it involves parsing.
