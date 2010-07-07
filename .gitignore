@@ -3,3 +3,6 @@
 /lisp2sql.scm~
 /lisp_on_sql.scm~
 /samples.scm~
+/relation-test.scm~
+/relation.hs~
+/test.scm~
