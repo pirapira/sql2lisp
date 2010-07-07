@@ -61,6 +61,11 @@
 
 (load "./samples")
 
+;; 
+(load "./translator")
+
+
+;; test list
 (define tests
   (list
    test-exec-sql
@@ -76,4 +81,6 @@
   (for-each
    (lambda (x) (or (x) (error 'test-failed)))
    tests))
+
+(test)
 
