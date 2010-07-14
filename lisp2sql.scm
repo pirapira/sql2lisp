@@ -9,6 +9,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; substitutor
 
+(use srfi-1)
 (use util.match)
 
 (define (collide? orig var free)
@@ -23,11 +24,23 @@
   (match orig
 	 ((? number?) #f)
 	 ((? string?) #f)
-	 ((? (lambda (x) (and (member x free)
-			      (member x bound))))
-	  #t)
+	 ((? (lambda (x) (equal? x var)))
+	  (not (null? (lset-intersection eq? free bound))))
+	 ((? symbol?) #f)
+	 ((lambda (bvar) body)
+	  (if (equal? bvar var) #f
+	      (collide?-inner body var free (cons bvar bound))))
 	 (_ #t)
 	 ))
+
+;; substitutor test
+
+(or
+ (and (eq? #t (collide? '(lambda (y) x) 'x '(y)))
+      (eq? #f (collide? '(lambda (x) x) 'y '(x)))
+;      (eq? #t #f)
+      )
+ (error 'collide?-returned-wrong-answer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; reducing to normal form 
