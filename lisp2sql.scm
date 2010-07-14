@@ -6,9 +6,39 @@
 ; http://autogol.ath.cx/dbd-sqlite3/Gauche-dbd-sqlite3-0.1.3.tgz
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; substitutor
+
+(use util.match)
+
+(define (collide? orig var free)
+  (collide?-inner orig var free '()))
+
+(define (collide?-inner orig var free bound)
+  ; orig: sexp
+  ; var:  symbol
+  ; free: list of symbols
+  ; bound: list of bound variables of orig
+  ; returns #t if any element of free is bound in the context of var in orig.
+  (match orig
+	 ((? number?) #f)
+	 ((? string?) #f)
+	 ((? (lambda (x) (and (member x free)
+			      (member x bound))))
+	  #t)
+	 (_ #t)
+	 ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; reducing to normal form 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; detect filter and sort
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; intermediate language ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; intermediate language
 ;
 ;; Syntax
 ; (('filter f0 f1 ... fn)
