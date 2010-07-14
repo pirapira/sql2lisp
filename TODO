@@ -1,3 +1,5 @@
+- survey on Oracle JVM integration.
+- survey on Ynot RDBMS
 - (test.scm) change exec-lisp so that accessors like (column from_addr row) is available
 - (samples.scm -> 星野さん) rewrite lisp for example 4
 - implement the Scheme version of group-by.  New table should contain rows like max(***) and count(***)
