@@ -1,5 +1,8 @@
 # 作業記録
 
+- 2010/7/14 14:08:45
+http://ocsigen.org/macaque/ <:select:
+
 - 2010/7/14 12:38:15
   Oracleのデータベース管理システムは，Javaを実行してくれるらしい．
   http://www.oracle.com/technology/tech/java/jsp/faq_jvm_java_stored_procedures.html#_How_does_one

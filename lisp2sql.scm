@@ -27,6 +27,8 @@
 	 ((? (lambda (x) (equal? x var)))
 	  (not (null? (lset-intersection eq? free bound))))
 	 ((? symbol?) #f)
+	 ((lambda (bvars ...) body)
+	  (for-all
 	 ((lambda (bvar) body)
 	  (if (equal? bvar var) #f
 	      (collide?-inner body var free (cons bvar bound))))

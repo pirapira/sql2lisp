@@ -1,0 +1,5 @@
+2010-07-07  平井 洋一  <yh@hirai-youichi-no-MacBook-Air.local>
+
+	* lisp2sql.scm: reading relation.scm coming with Gauche
+	reading Gauche manual on object system.
+
