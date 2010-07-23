@@ -55,17 +55,20 @@ module BTree(BPage, bpLookup, bpLookupPref, newPage, bpEmpty, bpInsert, bpKeys, 
 import Binary
 import qualified Binary
 
+import Foreign
+
 order :: Int
 order = 4
 
 -- B-trees are constructed from linked pages, stored in binary form.
 -- Invariants for a page (BPage n kds ptrs) are:
--- (1) n == length kds
--- (2) either ptrs == [] (if the page is a leaf)
---     or length ptrs == length kds + 1 
+-- (1) n == length kds <- kds ってなんじゃらほい
+-- (2) either ptrs == [] (if the page is a leaf) <- ptrs って BPageの第一引数
+--     or length ptrs == length kds + 1 <- なんでちょうど +1 なの?
 -- (3) the initial DBlock in kds contains a singleton list
 
 data BPage k d = BPage Int [(k, DBlock d)] [Bin (BPage k d)] deriving Binary
+-- <- これも読めない．あ，よめた．
 
 data DBlock d = DBlock [d] (Maybe (Bin (DBlock d))) deriving Binary
 
@@ -166,7 +169,7 @@ bpIns :: (Binary k, Binary d, Ord k) =>
 bpIns bh pagePtr key dat = 
   do
     (BPage n kdbs ptrs) <- getAt bh pagePtr
-    (change,ptrs',kdbs') <- ins ptrs kdbs
+    (change,ptrs',kdbs') <- ins ptrs kdbs -- <- recursion occurs here.
     ( case change of
       UnChanged -> return WholePage
       MoreData  -> do
