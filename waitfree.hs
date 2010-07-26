@@ -4,61 +4,64 @@
 -- 3. either one should obtain both amount of time.
 
 --An Implementation--------------------------------------------------------
-import System.IO
+import System.Random
 import Control.Concurrent
 
+
+-- Aux Functions
+
+randomDelay :: IO Int
+randomDelay = getStdRandom (randomR (1,500)) >>= \wait -> threadDelay wait >> return wait
+
+tryReadMVar :: MVar a -> IO (Maybe a)
+tryReadMVar box = tryTakeMVar box >>= \taken ->
+                case taken of
+                  Nothing -> return ()
+                  Just val -> putMVar box val >> return ()
+                >> return taken
+
 -- ThreadOne
-threadOneFirst :: MVar [Char] -> IO [Char]
-threadOneFirst = \threadOneInput -> takeMVar threadOneInput
+threadOnePut :: MVar Int -> IO ()
+threadOnePut oneWait = randomDelay >>= \wait -> putMVar oneWait wait
 
-threadOneSecond :: MVar [Char] -> [Char] -> IO ()
-threadOneSecond threadOneOutput str =
-    putMVar threadOneOutput $ str ++ str
+threadOneGet :: MVar Int -> IO ()
+threadOneGet twoWait = tryReadMVar twoWait >>=
+                       \wait ->
+                           case wait of
+                             Nothing -> print "one: could not read"
+                             Just i  -> print $ "one: two waited for " ++ show i
 
-threadOne :: MVar[Char] -> MVar[Char] -> IO ()
-threadOne inp outp = (threadOneFirst inp) >>= (threadOneSecond outp)
+threadOne :: MVar Int -> MVar Int -> IO ()
+threadOne = \oneWait twoWait ->
+            threadOnePut oneWait >> threadOneGet twoWait
 
 -- ThreadTwo
-threadTwoFirst :: MVar[Char] -> IO [Char]
-threadTwoFirst = takeMVar
+threadTwoPut :: MVar Int -> IO ()
+threadTwoPut twoWait = randomDelay >>= \wait -> putMVar twoWait wait
 
-threadTwoSecond :: MVar[Char] -> [Char] -> IO ()
-threadTwoSecond threadTwoOutput str = putMVar threadTwoOutput $ reverse str
+threadTwoGet :: MVar Int -> IO ()
+threadTwoGet oneWait = tryReadMVar oneWait >>=
+                       \wait ->
+                           case wait of
+                             Nothing -> print "two: could not read"
+                             Just i  -> print $ "two: one waited for " ++ show i
 
-threadTwo :: MVar[Char] -> MVar[Char] -> IO ()
-threadTwo = \input output -> (threadTwoFirst input) >>= (threadTwoSecond output)
+threadTwo :: MVar Int -> MVar Int -> IO ()
+threadTwo = \oneWait twoWait ->
+            threadTwoPut twoWait >> threadTwoGet oneWait
+
 
 -- Main
-inputline :: IO [Char]
-inputline = hGetLine stdin
-
-feedThreadOne :: MVar[Char] -> [Char] -> IO [Char]
-feedThreadOne threadOneInput input =  (putMVar threadOneInput input) >> return input
-
-feedThreadTwo :: MVar[Char] -> [Char] -> IO ()
-feedThreadTwo = putMVar
-
-waitThreadOne :: MVar[Char] -> () -> IO [Char]
-waitThreadOne = \threadOneOutput _ -> takeMVar threadOneOutput
-
-waitThreadTwo :: MVar[Char] -> [Char] -> IO ([Char], [Char])
-waitThreadTwo = \threadTwoOutput one -> (takeMVar threadTwoOutput) >>= \two -> (return (one, two))
-
-output :: ([Char], [Char]) -> IO ()
-output = \(x,y) -> putStr $ x ++ y
-
 main :: IO ()
-main = newEmptyMVar >>= \threadOneInput ->
-       newEmptyMVar >>= \threadOneOutput ->
-       newEmptyMVar >>= \threadTwoInput ->
-       newEmptyMVar >>= \threadTwoOutput ->
-       forkOS (threadOne threadOneInput threadOneOutput) >>
-       forkOS (threadTwo threadTwoInput threadTwoOutput) >>
-       inputline >>=
-       (feedThreadOne threadOneInput) >>=
-       (feedThreadTwo threadTwoInput) >>= 
-       (waitThreadOne threadOneOutput) >>=
-       (waitThreadTwo threadTwoOutput) >>= output
+main = newEmptyMVar >>= \oneWait ->
+       newEmptyMVar >>= \twoWait ->
+       newEmptyMVar >>= \oneFin ->
+       newEmptyMVar >>= \twoFin ->
+       forkIO (threadOne oneWait twoWait) >>
+       forkIO (threadTwo oneWait twoWait) >>
+       readMVar oneFin >>
+       readMVar twoFin >>
+       return ()
 
 --What is Wrong with This--------------------------------------------------------
 
