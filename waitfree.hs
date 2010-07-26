@@ -19,12 +19,8 @@
 -- two: one waited for 115ms.
 
 
-
 import System.Random
 import Control.Concurrent
-
-
--- Aux Functions
 
 randomDelay :: IO Int
 randomDelay = getStdRandom (randomR (1,500)) >>= \wait -> threadDelay wait >> return wait
@@ -36,11 +32,8 @@ tryReadMVar box = tryTakeMVar box >>= \taken ->
                   Just val -> putMVar box val >> return ()
                 >> return taken
 
-
--- ThreadOne
 threadPut :: MVar Int -> IO ()
 threadPut oneWait = randomDelay >>= \wait -> putMVar oneWait wait
-
 
 threadGet :: MVar Int -> String -> String -> IO ()
 threadGet twoWait myName peerName = tryReadMVar twoWait >>=
@@ -49,16 +42,9 @@ threadGet twoWait myName peerName = tryReadMVar twoWait >>=
                              Nothing -> putStrLn $ myName ++ ": could not read."
                              Just i  -> putStrLn $ myName ++ ": " ++ peerName ++ " waited for " ++ show i ++ "ms."
 
-threadOne :: MVar Int -> MVar Int -> MVar () -> IO ()
-threadOne = \oneWait twoWait oneFin ->
-            threadPut oneWait >> threadGet twoWait "one" "two" >> putMVar oneFin ()
-
--- ThreadTwo
-
-threadTwo :: MVar Int -> MVar Int -> MVar () -> IO ()
-threadTwo = \oneWait twoWait twoFin ->
-            threadPut twoWait >> threadGet oneWait "two" "one" >> putMVar twoFin ()
-
+thread :: MVar Int -> MVar Int -> MVar () -> String -> String -> IO ()
+thread = \myWait peerWait oneFin myName peerName ->
+            threadPut myWait >> threadGet peerWait myName peerName >> putMVar oneFin ()
 
 -- Main
 main :: IO ()
@@ -67,8 +53,8 @@ main = putStrLn "starting both threads..." >>
        newEmptyMVar >>= \twoWait ->
        newEmptyMVar >>= \oneFin ->
        newEmptyMVar >>= \twoFin ->
-       forkIO (threadOne oneWait twoWait oneFin) >>
-       forkIO (threadTwo oneWait twoWait twoFin) >>
+       forkIO (thread oneWait twoWait oneFin "one" "two") >>
+       forkIO (thread twoWait oneWait twoFin "two" "one") >>
        readMVar oneFin >>
        readMVar twoFin >>
        putStrLn "finish!"
