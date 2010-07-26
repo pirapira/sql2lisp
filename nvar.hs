@@ -39,6 +39,8 @@ import Control.Concurrent.MVar
 --  * Writing to a filled 'NVar' makes NVar filled with
 --    a value larger or equal to those already written and the newly written value.
 
+-- TODO: if join operation is there, it does not have to be (Ord)
+
 data (Ord a) => NVar a = NVar (MVar a)
 
 -- |Build a 'SampleVar' with an initial value.
