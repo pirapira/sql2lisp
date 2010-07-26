@@ -36,35 +36,28 @@ tryReadMVar box = tryTakeMVar box >>= \taken ->
                   Just val -> putMVar box val >> return ()
                 >> return taken
 
--- ThreadOne
-threadOnePut :: MVar Int -> IO ()
-threadOnePut oneWait = randomDelay >>= \wait -> putMVar oneWait wait
 
-threadOneGet :: MVar Int -> IO ()
-threadOneGet twoWait = tryReadMVar twoWait >>=
+-- ThreadOne
+threadPut :: MVar Int -> IO ()
+threadPut oneWait = randomDelay >>= \wait -> putMVar oneWait wait
+
+
+threadGet :: MVar Int -> String -> String -> IO ()
+threadGet twoWait myName peerName = tryReadMVar twoWait >>=
                        \wait ->
                            case wait of
-                             Nothing -> putStrLn "one: could not read."
-                             Just i  -> putStrLn $ "one: two waited for " ++ show i ++ "ms."
+                             Nothing -> putStrLn $ myName ++ ": could not read."
+                             Just i  -> putStrLn $ myName ++ ": " ++ peerName ++ " waited for " ++ show i ++ "ms."
 
 threadOne :: MVar Int -> MVar Int -> MVar () -> IO ()
 threadOne = \oneWait twoWait oneFin ->
-            threadOnePut oneWait >> threadOneGet twoWait >> putMVar oneFin ()
+            threadPut oneWait >> threadGet twoWait "one" "two" >> putMVar oneFin ()
 
 -- ThreadTwo
-threadTwoPut :: MVar Int -> IO ()
-threadTwoPut twoWait = randomDelay >>= \wait -> putMVar twoWait wait
-
-threadTwoGet :: MVar Int -> IO ()
-threadTwoGet oneWait = tryReadMVar oneWait >>=
-                       \wait ->
-                           case wait of
-                             Nothing -> putStrLn "two: could not read."
-                             Just i  -> putStrLn $ "two: one waited for " ++ show i ++ "ms."
 
 threadTwo :: MVar Int -> MVar Int -> MVar () -> IO ()
 threadTwo = \oneWait twoWait twoFin ->
-            threadTwoPut twoWait >> threadTwoGet oneWait >> putMVar twoFin ()
+            threadPut twoWait >> threadGet oneWait "two" "one" >> putMVar twoFin ()
 
 
 -- Main
