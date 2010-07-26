@@ -16,3 +16,7 @@
 /waitfree.hi
 /waitfree.hs~
 /waitfree.o
+/waitfree
+/nvar.hi
+/nvar.o
+/test.log

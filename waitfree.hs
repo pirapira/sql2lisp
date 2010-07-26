@@ -1,5 +1,7 @@
+-- ghc --make -threaded waitfree.hs
+
 --Protocol Description-----------------------------------------------------
--- 1. thread one and two waits for randomly long time up to 500 ms.
+-- 1. thread one and two waits for randomly long time up to 100 ms.
 -- 2. each writes and reads the amount of time they waited for.
 -- 3. either one should obtain both amount of time.
 
@@ -21,40 +23,33 @@
 
 import System.Random
 import Control.Concurrent
+import NVar
 
 randomDelay :: IO Int
-randomDelay = getStdRandom (randomR (1,500)) >>= \wait -> threadDelay wait >> return wait
+randomDelay = getStdRandom (randomR (1,100)) >>= \wait -> threadDelay wait >> return wait
 
-tryReadMVar :: MVar a -> IO (Maybe a)
-tryReadMVar box = tryTakeMVar box >>= \taken ->
-                case taken of
-                  Nothing -> return ()
-                  Just val -> putMVar box val >> return ()
-                >> return taken
+threadPut :: NVar Int -> IO ()
+threadPut oneWait = randomDelay >>= \wait -> writeNVar oneWait wait
 
-threadPut :: MVar Int -> IO ()
-threadPut oneWait = randomDelay >>= \wait -> putMVar oneWait wait
-
-threadGet :: MVar Int -> String -> String -> IO ()
-threadGet twoWait myName peerName = tryReadMVar twoWait >>=
+threadGet :: NVar Int -> String -> String -> IO ()
+threadGet twoWait myName peerName = readNVar twoWait >>=
                        \wait ->
-                           case wait of
-                             Nothing -> putStrLn $ myName ++ ": could not read."
-                             Just i  -> putStrLn $ myName ++ ": " ++ peerName ++ " waited for " ++ show i ++ "ms."
+                           putStrLn $ myName ++ ": " ++ peerName ++ " halted for at least "
+                                        ++ show wait ++ "ms."
 
-thread :: MVar Int -> MVar Int -> MVar () -> String -> String -> IO ()
+thread :: NVar Int -> NVar Int -> MVar () -> String -> String -> IO ()
 thread = \myWait peerWait oneFin myName peerName ->
             threadPut myWait >> threadGet peerWait myName peerName >> putMVar oneFin ()
 
 -- Main
 main :: IO ()
 main = putStrLn "starting both threads..." >>
-       newEmptyMVar >>= \oneWait ->
-       newEmptyMVar >>= \twoWait ->
+       newNVar 0 >>= \oneWait ->
+       newNVar 0 >>= \twoWait ->
        newEmptyMVar >>= \oneFin ->
        newEmptyMVar >>= \twoFin ->
        forkIO (thread oneWait twoWait oneFin "one" "two") >>
        forkIO (thread twoWait oneWait twoFin "two" "one") >>
-       readMVar oneFin >>
-       readMVar twoFin >>
+       takeMVar oneFin >>
+       takeMVar twoFin >>
        putStrLn "finish!"

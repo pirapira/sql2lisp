@@ -38,19 +38,16 @@ import Control.Concurrent.MVar
 --
 --  * Writing to a filled 'NVar' makes NVar filled with
 --    a value larger or equal to those already written and the newly written value.
---
---  * The type a must be of Ord.
 
-type NVar a
- = MVar (a)
+data (Ord a) => NVar a = NVar (MVar a)
 
 -- |Build a 'SampleVar' with an initial value.
-newNVar :: a -> IO (NVar a)
-newNVar v = newMVar (v)
+newNVar :: (Ord a) => a -> IO (NVar a)
+newNVar v = newMVar v >>= \mvar -> return $ NVar mvar
 
 -- |Non-blocking read.
-readNVar :: NVar a -> IO a
-readNVar svar = do
+readNVar :: (Ord a) => NVar a -> IO a
+readNVar (NVar svar) = do
 --
 -- filled => make empty and grab sample
 -- not filled => try to grab value, empty when read val.
@@ -60,8 +57,8 @@ readNVar svar = do
    return val
 
 -- |Write a value into the 'NVar' if the new value is larger.
-writeNVar :: Ord a => NVar a -> a -> IO ()
-writeNVar svar v = do
+writeNVar :: (Ord a) => NVar a -> a -> IO ()
+writeNVar (NVar svar) v = do
 --
 -- filled => overwrite
 -- not filled => fill, write val
