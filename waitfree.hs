@@ -1,9 +1,25 @@
---Problem--------------------------------------------------------
+--Protocol Description-----------------------------------------------------
 -- 1. thread one and two waits for randomly long time up to 500 ms.
 -- 2. each writes and reads the amount of time they waited for.
 -- 3. either one should obtain both amount of time.
 
---An Implementation--------------------------------------------------------
+--Possible Outputs---------------------------------------------------------
+-- There are three patterns
+
+-- pattern 1
+-- one: two waited for 115ms.
+-- two: could not read.
+
+-- pattern 2
+-- one: could not read.
+-- two: one waited for 115ms.
+
+-- pattern 3
+-- one: two waited for 320ms.
+-- two: one waited for 115ms.
+
+
+
 import System.Random
 import Control.Concurrent
 
@@ -28,12 +44,12 @@ threadOneGet :: MVar Int -> IO ()
 threadOneGet twoWait = tryReadMVar twoWait >>=
                        \wait ->
                            case wait of
-                             Nothing -> print "one: could not read"
-                             Just i  -> print $ "one: two waited for " ++ show i
+                             Nothing -> putStrLn "one: could not read."
+                             Just i  -> putStrLn $ "one: two waited for " ++ show i ++ "ms."
 
-threadOne :: MVar Int -> MVar Int -> IO ()
-threadOne = \oneWait twoWait ->
-            threadOnePut oneWait >> threadOneGet twoWait
+threadOne :: MVar Int -> MVar Int -> MVar () -> IO ()
+threadOne = \oneWait twoWait oneFin ->
+            threadOnePut oneWait >> threadOneGet twoWait >> putMVar oneFin ()
 
 -- ThreadTwo
 threadTwoPut :: MVar Int -> IO ()
@@ -43,69 +59,23 @@ threadTwoGet :: MVar Int -> IO ()
 threadTwoGet oneWait = tryReadMVar oneWait >>=
                        \wait ->
                            case wait of
-                             Nothing -> print "two: could not read"
-                             Just i  -> print $ "two: one waited for " ++ show i
+                             Nothing -> putStrLn "two: could not read."
+                             Just i  -> putStrLn $ "two: one waited for " ++ show i ++ "ms."
 
-threadTwo :: MVar Int -> MVar Int -> IO ()
-threadTwo = \oneWait twoWait ->
-            threadTwoPut twoWait >> threadTwoGet oneWait
+threadTwo :: MVar Int -> MVar Int -> MVar () -> IO ()
+threadTwo = \oneWait twoWait twoFin ->
+            threadTwoPut twoWait >> threadTwoGet oneWait >> putMVar twoFin ()
 
 
 -- Main
 main :: IO ()
-main = newEmptyMVar >>= \oneWait ->
+main = putStrLn "starting both threads..." >>
+       newEmptyMVar >>= \oneWait ->
        newEmptyMVar >>= \twoWait ->
        newEmptyMVar >>= \oneFin ->
        newEmptyMVar >>= \twoFin ->
-       forkIO (threadOne oneWait twoWait) >>
-       forkIO (threadTwo oneWait twoWait) >>
+       forkIO (threadOne oneWait twoWait oneFin) >>
+       forkIO (threadTwo oneWait twoWait twoFin) >>
        readMVar oneFin >>
        readMVar twoFin >>
-       return ()
-
---What is Wrong with This--------------------------------------------------------
-
--- However, what it really does is 
--- main' = (hGetLine stdin) >>= \input ->
---         (\(x,y) -> putStr $ x ++ y)
---         (((\inp -> inp ++ inp  ) input,
---          ((\input -> reverse input))input)
--- with two parts executed in separate threads.
-
-
-
-
---First Goal---------------------------------------------------------------------
-
--- So, instead of writing the actual code, we should be able to write something like:
-
--- import System.IO
-
--- main'' = (hGetLine stdin) >>= \input ->
---        makeThread >>= \threadOne ->
---        makeThread >>= \threadTwo ->
---        (\(x,y) -> putStr $ x ++ y)
---        (threadOne (\input -> input ++ input) input,
---         threadTwo (\input -> reverse input) input)
-
--- The expressions threadOne and threadTwo are working as asynchronous RPC interface.
-
-
-
---Second Goal---------------------------------------------------------------------
-
--- The first goal is not satisfactory if it is implemented using two MVar's:
----- input MVar: used when RPC is called,
----- output MVar: used when RPC is returned.
--- We call this implementation "naive two MVar"
-
--- consider the following RPC.
--- (threadOne compute long list)
--- Assume the caller wants to consume the first elements of the computed long list.
--- The naive two MVar approach does not satisfy the caller's need for using
--- the first elements as soon as possible.
-
--- A clever implementation should satisfy
----- parallel execution of caller and caller
----- partial result passing
--- We want to support not only lists, but also all inductively defined data types.
+       putStrLn "finish!"
