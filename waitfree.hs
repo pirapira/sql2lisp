@@ -3,23 +3,7 @@
 --Protocol Description-----------------------------------------------------
 -- 1. thread one and two waits for randomly long time up to 100 ms.
 -- 2. each writes and reads the amount of time they waited for.
--- 3. either one should obtain both amount of time.
-
---Possible Outputs---------------------------------------------------------
--- There are three patterns
-
--- pattern 1
--- one: two waited for 115ms.
--- two: could not read.
-
--- pattern 2
--- one: could not read.
--- two: one waited for 115ms.
-
--- pattern 3
--- one: two waited for 320ms.
--- two: one waited for 115ms.
-
+-- 3. either one should obtain the amount of time written by the peer.
 
 import System.Random
 import Control.Concurrent
