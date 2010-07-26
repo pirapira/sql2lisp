@@ -1,9 +1,9 @@
 -- relation schema: name -> type
 
 data BaseType = STRING | INTEGER
-data BaseData = BaseString [Char] | BaseInteger Integer
+data BaseData = BaseString String | BaseInteger Integer
 
-data ColumnName  = ColumnName [Char]
+data ColumnName  = ColumnName String
                 deriving Show
 
 type Schema = ColumnName -> BaseType
