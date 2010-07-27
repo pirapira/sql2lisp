@@ -214,6 +214,134 @@ Axiom sequential_consistency:
     (vee (supset (knowledge shmem phi) (knowledge shmem psi))
       (supset (knowledge shmem psi) (knowledge shmem phi))).
 
+
+Lemma Cleft:
+  forall (phi psi: o) (u: U),
+    (judgement u
+      (supset
+        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+        (knowledge th0 (knowledge shmem (knowledge th1 psi))))) ->
+    (judgement u
+      (wedge
+        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+        (knowledge th1 (knowledge shmem (knowledge th1 psi))))) ->
+    (judgement u
+      (knowledge th0 (knowledge shmem (knowledge th1 psi)))).
+  intros phi psi u.
+  intro one.
+  intro two.
+  apply supsetE with (knowledge th0 (knowledge shmem (knowledge th0 phi))).
+  exact one.
+  apply wedgeEl with (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+  exact two.
+  Qed.
+
+Lemma C:
+  forall (phi psi: o) (u: U),
+    (judgement u
+      (supset
+        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+        (knowledge th0 (knowledge shmem (knowledge th1 psi))))) ->
+    (judgement u
+      (wedge
+        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+        (knowledge th1 (knowledge shmem (knowledge th1 psi))))) ->
+    (judgement u
+      (knowledge th0 (knowledge th1 psi))).
+  intros phi psi u.
+  intros one two.
+  apply supsetE with (knowledge th0 (knowledge shmem (knowledge th1 psi))).
+  apply supsetI.
+  intro zero.
+  apply kI with ((knowledge shmem (knowledge th1 psi)) :: nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact zero.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro psi0.
+  apply kE with shmem.
+  apply kE with th0.
+  apply psi0.
+  apply in_eq.
+  apply Cleft with phi.
+  exact one.
+  exact two.
+  Qed.
+
+Lemma Aright:
+  forall (phi psi: o) (u: U) (th0 th1: agent),
+    (judgement u (knowledge th0 (knowledge shmem (knowledge th0 phi)))) ->
+    (judgement u
+      (supset
+        (knowledge th0 (supset
+          (knowledge shmem (knowledge th0 phi))
+          (knowledge shmem (knowledge th1 psi))))
+        (knowledge th0 (knowledge shmem (knowledge th1 psi))))).
+  intros phi psi u ei bee.
+  intro hidari.
+  apply supsetI.
+  intro two.
+  apply kI with ((knowledge shmem (knowledge ei phi)) ::
+    (supset (knowledge shmem (knowledge ei phi))
+                (knowledge shmem (knowledge bee psi))) :: nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact hidari.
+  induction H.
+  rewrite <- H.
+  exact two.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro gamma.
+  apply supsetE with (knowledge shmem (knowledge ei phi)).
+  apply kE with ei.
+  apply gamma.
+  apply in_cons.
+  apply in_eq.
+  apply kE with ei.
+  apply gamma.
+  apply in_eq.
+  Qed.
+
+Lemma A:
+  forall (phi psi: o) (u: U) (ei bee: agent),
+    (judgement u
+      (knowledge bee (knowledge ei (supset
+        (knowledge shmem (knowledge ei phi))
+        (knowledge shmem (knowledge bee psi)))))) ->
+    (judgement u (vee
+      (supset
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge ei (knowledge shmem (knowledge bee psi))))
+      (supset
+        (knowledge bee (knowledge shmem (knowledge bee psi)))
+        (knowledge bee (knowledge shmem (knowledge ei phi)))))).
+  intros phi psi u ei bee.
+  intro pre.
+  apply veeIl.
+  apply supsetI.
+  intro two.
+  apply supsetE with
+    (knowledge ei (supset
+      (knowledge shmem (knowledge ei phi))
+      (knowledge shmem (knowledge bee psi)))).
+  apply Aright.
+  exact two.
+  apply kE with bee.
+  exact pre.
+  Qed.
+
+      
+      
+      
+
 Lemma comm:
   forall (phi psi: o) (u: U),
     (judgement u (knowledge th0 phi)) ->
@@ -221,127 +349,4 @@ Lemma comm:
     (judgement u (vee (knowledge th0 psi) (knowledge th1 phi))).
   intros phi psi u.
   intros init0 init1.
-  apply veeE with 
-    (supset
-      (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-      (knowledge th0 (knowledge shmem (knowledge th1 psi))))
-    (supset
-      (knowledge th1 (knowledge shmem (knowledge th1 psi)))
-      (knowledge th1 (knowledge shmem (knowledge th0 psi)))).
-  apply veeE with
-    (knowledge th1 (knowledge th0
-      (supset
-        (knowledge shmem (knowledge th0 phi))
-        (knowledge shmem (knowledge th1 psi)))))
-    (knowledge th1 (knowledge th0
-      (supset
-        (knowledge shmem (knowledge th1 psi))
-        (knowledge shmem (knowledge th0 phi))))).
-  apply Kvee with 
-    (knowledge th0 (supset (knowledge shmem (knowledge th0 phi))
-      (knowledge shmem (knowledge th1 psi))))
-    (knowledge th0 (supset (knowledge shmem (knowledge th1 psi))
-      (knowledge shmem (knowledge th0 phi))))
-    th1.
-  apply kI with nil.
-  intro psi0.
-  intro abs.
-  apply False_ind.
-  apply abs.
-  intro v.
-  intro psi0.
-  apply Kvee with
-    (supset (knowledge shmem (knowledge th0 phi))
-              (knowledge shmem (knowledge th1 psi)))
-    (supset (knowledge shmem (knowledge th1 psi))
-              (knowledge shmem (knowledge th0 phi)))
-    th0.
-  apply kI with nil.
-  intro psi1.
-  intro pre.
-  apply False_ind.
-  apply pre.
-  intro v0.
-  intro psi1.
-  apply sequential_consistency.
-  intro lef.
-  apply veeIl.
-  exact lef.
-  intro rig.
-  apply veeIr.
-  exact rig.
-  intro pre.
-  apply veeIl.
-  exact pre.
-  intro pre.
-  apply veeIr.
-  exact pre.
-  intro pre.
-  apply veeIl.
-  apply supsetI.
-  intro th0mem0.
-  apply kI with 
-    (cons (knowledge shmem (knowledge th0 phi))
-      (cons
-        (supset
-          (knowledge shmem (knowledge th0 phi))
-          (knowledge shmem (knowledge th1 psi)))
-        nil)).
-  intro phi0.
-  intro contain.
-  induction contain.
-  rewrite <- H.
-  exact th0mem0.
-  induction H.
-  rewrite <- H.
-  apply kE with th1.
-  exact pre.
-  apply False_ind.
-  apply H.
-  intro v.
-  intro psi0.
-  apply supsetE with (knowledge shmem (knowledge th0 phi)).
-  apply kE with th0.
-  apply psi0.
-  apply in_cons.
-  apply in_eq.
-  apply kE with th0.
-  apply psi0.
-  apply in_eq.
-  intro rit.
-  apply veeIr.
-  apply supsetI.
-  intro pre.
-  apply kI with
-    (knowledge shmem (knowledge th1 psi) ::
-      (supset (knowledge shmem (knowledge th1 psi))
-                   (knowledge shmem (knowledge th0 phi))) ::
-      nil).
-  intro psi0.
-  intro contain.
-  induction contain.
-  rewrite <- H.
-  exact pre.
-  induction H.
-  rewrite <- H.
-  apply kI with
-    ((knowledge th0
-                (supset (knowledge shmem (knowledge th1 psi))
-                   (knowledge shmem (knowledge th0 phi)))) :: nil).
-  intro psi1.
-  intro contain.
-  induction contain.
-  rewrite <- H0.
-  exact rit.
-  apply False_ind.
-  apply H0.
-  intro v.
-  intro psi1.
-  apply kE with th0.
-  apply kE with th1.
-  apply psi1.
-  apply in_eq.
-  apply False_ind.
-  apply H.
-  intro v.
-  intro psi0.
+  
