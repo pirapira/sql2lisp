@@ -197,6 +197,19 @@ intro.
 right.
 exact H.
 Qed.
+
+Lemma simplerKvee:
+  forall (u: U) (phi psi: o) (a:agent),
+    (judgement u (knowledge a (vee phi psi))) ->
+    (judgement u (vee (knowledge a phi)
+      (knowledge a psi))).
+  intros u phi psi a.
+  intro pre.
+  apply Kvee with phi psi a.
+  exact pre.
+  apply veeIl.
+  apply veeIr.
+  Qed.
   
 Section sequential_consistency.
 Parameter shmem th0 th1: agent.
@@ -310,7 +323,7 @@ Lemma Aright:
   apply in_eq.
   Qed.
 
-Lemma A:
+Lemma Aone:
   forall (phi psi: o) (u: U) (ei bee: agent),
     (judgement u
       (knowledge bee (knowledge ei (supset
@@ -338,9 +351,92 @@ Lemma A:
   exact pre.
   Qed.
 
-      
-      
-      
+Lemma Atwo:
+  forall (phi psi: o) (u: U) (ei bee: agent),
+    (judgement u
+      (knowledge bee (knowledge ei (supset
+        (knowledge shmem (knowledge ei phi))
+        (knowledge shmem (knowledge bee psi)))))) ->
+    (judgement u (vee
+      (supset
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge ei (knowledge shmem (knowledge bee psi))))
+      (supset
+        (knowledge bee (knowledge shmem (knowledge bee psi)))
+        (knowledge bee (knowledge shmem (knowledge ei phi)))))).
+  intros phi psi u ei bee.
+  intro pre.
+  apply veeIl.
+  apply supsetI.
+  intro two.
+  apply supsetE with (knowledge ei
+    (supset (knowledge shmem (knowledge ei phi))
+      (knowledge shmem (knowledge bee psi)))).
+  apply Aright.
+  exact two.
+  apply kE with bee.
+  exact pre.
+  Qed.
+
+
+Lemma B:
+  forall (phi psi: o) (u: U),
+    (judgement u
+      (vee
+        (supset
+          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+          (knowledge th0 (knowledge shmem (knowledge th1 psi))))
+        (supset
+          (knowledge th1 (knowledge shmem (knowledge th1 psi)))
+          (knowledge th1 (knowledge shmem (knowledge th0 phi)))))).
+  intros phi psi u.
+  apply veeE with 
+    (knowledge th1 (knowledge th0 (supset
+        (knowledge shmem (knowledge th0 phi))
+        (knowledge shmem (knowledge th1 psi)))))
+    (knowledge th1 (knowledge th0 (supset
+        (knowledge shmem (knowledge th1 psi))
+        (knowledge shmem (knowledge th0 phi))))).
+  apply simplerKvee.
+  apply kI with nil.
+  intro psi0.
+  apply False_ind.
+  intro v.
+  intro irrelevant.
+  apply simplerKvee.
+  apply kI with nil.
+  intro psi0.
+  apply False_ind.
+  intro v0.
+  intro irre.
+  apply sequential_consistency.
+  apply Aone.
+  intro pre.
+  apply veeIr.
+  apply supsetI.
+  intro two.
+  apply supsetE with (knowledge th1 (supset
+    (knowledge shmem (knowledge th1 psi))
+    (knowledge shmem (knowledge th0 phi)))).
+  apply Aright.
+  exact two.
+  apply kI with ((knowledge th0
+                (supset (knowledge shmem (knowledge th1 psi))
+                   (knowledge shmem (knowledge th0 phi)))) :: nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact pre.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro gamma.
+  apply kE with th0.
+  apply kE with th1.
+  apply gamma.
+  apply in_eq.
+  Qed.
 
 Lemma comm:
   forall (phi psi: o) (u: U),
