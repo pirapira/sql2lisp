@@ -1,3 +1,6 @@
+- slash relationの話にしてしまえば，抽出できる．
+
+
 - 例題かえる
 - (lisp2sql.scm) treat (lambda (x y z) ...) form
 - (lisp2sql.scm) write tests

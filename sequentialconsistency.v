@@ -5,6 +5,7 @@ Parameter agent : Set.
 Require Import List.
 
 Parameter U : Type.
+Parameter current: U.
 
 Parameter o: Type.
 
@@ -25,9 +26,10 @@ Definition validity (phi : o) : Prop :=
 (* Model Property *)
 Axiom valid: forall P: Prop,
   P -> validity (embed P).
-Axiom back:
-  forall P: Prop,
-  (validity (embed P)) -> P.
+Axiom back: forall P: Prop,
+  judgement current (embed P) -> P.
+
+
 Axiom mp:
   forall P Q: Prop,
     (P -> Q) -> (forall u: U, judgement u (embed P) -> judgement u (embed Q)).
@@ -80,6 +82,41 @@ Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:age
   (judgement u (knowledge a phi) -> judgement u theta) ->
   (judgement u (knowledge a psi) -> judgement u theta) ->
   judgement u theta.
+
+
+Lemma disj_current_embed: forall (L M: Prop),
+  judgement current (vee (embed L) (embed M)) ->
+  L \/ M.
+  intros L M.
+  intro pre.
+  apply back.
+  apply veeE with (embed L) (embed M).
+  exact pre.
+  apply mp.
+  left.
+  exact H.
+  apply mp.
+  right.
+  exact H.
+  Qed.
+
+Lemma disj_current: forall (phi psi: o),
+  judgement current (vee phi psi) ->
+  judgement current phi \/ judgement current psi.
+  intros phi psi.
+  intro pre.
+  apply back.
+  apply veeE with phi psi.
+  exact pre.
+  intro two.
+  apply valid.
+  left.
+  exact two.
+  intro two.
+  apply valid.
+  right.
+  exact two.
+  Qed.
 
 
 Lemma everywhere00: forall u:U, judgement u (embed (0 = 0)).
