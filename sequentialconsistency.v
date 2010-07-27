@@ -19,12 +19,15 @@ Parameter wedge: o->o->o.
 Parameter supset: o->o->o.
 Parameter ff: o.
 
+Definition validity (phi : o) : Prop :=
+  forall u:U, judgement u phi.
+
 (* Model Property *)
-Axiom valid: forall P: Prop, forall u: U,
-  P -> judgement u (embed P).
+Axiom valid: forall P: Prop,
+  P -> validity (embed P).
 Axiom back:
   forall P: Prop,
-  (forall u:U, judgement u (embed P)) -> P.
+  (validity (embed P)) -> P.
 Axiom mp:
   forall P Q: Prop,
     (P -> Q) -> (forall u: U, judgement u (embed P) -> judgement u (embed Q)).
@@ -180,7 +183,7 @@ Lemma disj_distr:
   Qed.
 
 Lemma disj_meta:
- forall L M:Prop, (forall (u:U), (judgement u (vee (embed L) (embed M)))) -> L\/M.
+ forall L M:Prop, (validity (vee (embed L) (embed M))) -> L\/M.
 intro L.
 intro M.
 intro formal.
@@ -209,18 +212,12 @@ Lemma simplerKvee:
   exact pre.
   apply veeIl.
   apply veeIr.
-  Qed.
+  Qed. 
+
+(* prove disjunction property. Then we can use the extraction. *)
   
 Section sequential_consistency.
 Parameter shmem th0 th1: agent.
-Axiom write0:
-  forall (psi: o) (u: U),
-  judgement u (knowledge th0 psi) ->
-  judgement u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
-Axiom write1:
-  forall (psi: o) (u: U),
-    judgement u (knowledge th1 psi) ->
-    judgement u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
     judgement u
@@ -229,44 +226,44 @@ Axiom sequential_consistency:
 
 
 Lemma Cleft:
-  forall (phi psi: o) (u: U),
+  forall (phi psi: o) (u: U) (ei bee: agent),
     (judgement u
       (supset
-        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-        (knowledge th0 (knowledge shmem (knowledge th1 psi))))) ->
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge ei (knowledge shmem (knowledge bee psi))))) ->
     (judgement u
       (wedge
-        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-        (knowledge th1 (knowledge shmem (knowledge th1 psi))))) ->
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge bee (knowledge shmem (knowledge bee psi))))) ->
     (judgement u
-      (knowledge th0 (knowledge shmem (knowledge th1 psi)))).
-  intros phi psi u.
+      (knowledge ei (knowledge shmem (knowledge bee psi)))).
+  intros phi psi u ei bee.
   intro one.
   intro two.
-  apply supsetE with (knowledge th0 (knowledge shmem (knowledge th0 phi))).
+  apply supsetE with (knowledge ei (knowledge shmem (knowledge ei phi))).
   exact one.
-  apply wedgeEl with (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+  apply wedgeEl with (knowledge bee (knowledge shmem (knowledge bee psi))).
   exact two.
   Qed.
 
 Lemma C:
-  forall (phi psi: o) (u: U),
+  forall (phi psi: o) (u: U) (ei bee:agent),
     (judgement u
       (supset
-        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-        (knowledge th0 (knowledge shmem (knowledge th1 psi))))) ->
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge ei (knowledge shmem (knowledge bee psi))))) ->
     (judgement u
       (wedge
-        (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-        (knowledge th1 (knowledge shmem (knowledge th1 psi))))) ->
+        (knowledge ei (knowledge shmem (knowledge ei phi)))
+        (knowledge bee (knowledge shmem (knowledge bee psi))))) ->
     (judgement u
-      (knowledge th0 (knowledge th1 psi))).
-  intros phi psi u.
+      (knowledge ei (knowledge bee psi))).
+  intros phi psi u ei bee.
   intros one two.
-  apply supsetE with (knowledge th0 (knowledge shmem (knowledge th1 psi))).
+  apply supsetE with (knowledge ei (knowledge shmem (knowledge bee psi))).
   apply supsetI.
   intro zero.
-  apply kI with ((knowledge shmem (knowledge th1 psi)) :: nil).
+  apply kI with ((knowledge shmem (knowledge bee psi)) :: nil).
   intro psi0.
   intro contain.
   induction contain.
@@ -277,7 +274,7 @@ Lemma C:
   intro v.
   intro psi0.
   apply kE with shmem.
-  apply kE with th0.
+  apply kE with ei.
   apply psi0.
   apply in_eq.
   apply Cleft with phi.
@@ -438,11 +435,66 @@ Lemma B:
   apply in_eq.
   Qed.
 
-Lemma comm:
+Lemma fig2:
   forall (phi psi: o) (u: U),
-    (judgement u (knowledge th0 phi)) ->
-    (judgement u (knowledge th1 psi)) ->
-    (judgement u (vee (knowledge th0 psi) (knowledge th1 phi))).
+    (judgement u
+      (supset
+        (wedge
+          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+          (knowledge th1 (knowledge shmem (knowledge th1 psi))))
+        (vee
+          (knowledge th0 (knowledge th1 psi))
+          (knowledge th1 (knowledge th0 phi))))).
   intros phi psi u.
-  intros init0 init1.
-  
+  apply supsetI.
+  intro pre.
+apply veeE with 
+  (supset
+    (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+    (knowledge th0 (knowledge shmem (knowledge th1 psi))))
+  (supset
+    (knowledge th1 (knowledge shmem (knowledge th1 psi)))
+    (knowledge th1 (knowledge shmem (knowledge th0 phi)))).
+apply B.
+intro two.
+apply veeIl.
+apply C with phi.
+exact two.
+exact pre.
+intro two.
+apply veeIr.
+apply C with psi.
+exact two.
+apply wedgeI.
+apply wedgeEr with (knowledge th0 (knowledge shmem (knowledge th0 phi))).
+exact pre.
+apply wedgeEl with (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+exact pre.
+Qed.
+
+(* extraction of fig2 yields () *)
+
+Axiom write0:
+  forall (psi: o) (u: U),
+  judgement u (knowledge th0 psi) ->
+  judgement u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
+Axiom write1:
+  forall (psi: o) (u: U),
+    judgement u (knowledge th1 psi) ->
+    judgement u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
+
+Lemma comm:
+  forall (phi psi: o) (u:U),
+    judgement u (knowledge th0 phi) ->
+    judgement u (knowledge th1 psi) ->
+    judgement u (vee
+    
+    
+
+End sequential_consistency.
+
+
+
+Extraction Language Haskell.
+Extraction fig2.
+          
