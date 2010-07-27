@@ -19,16 +19,20 @@ Parameter wedge: o->o->o.
 Parameter supset: o->o->o.
 Parameter ff: o.
 
+(* Model Property *)
 Axiom valid: forall P: Prop, forall u: U,
   P -> judgement u (embed P).
 Axiom back:
   forall P: Prop,
   (forall u:U, judgement u (embed P)) -> P.
+Axiom mp:
+  forall P Q: Prop,
+    (P -> Q) -> (forall u: U, judgement u (embed P) -> judgement u (embed Q)).
 
+(* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
   judgement u (knowledge a phi) -> judgement u phi.
 
-(* a bit cumbersome. fix it to list style *)
 Axiom kI: forall phi: o, forall ps: list o, forall u: U, forall a: agent,
   (forall psi: o, In psi ps -> judgement u (knowledge a psi)) ->
   (forall v: U, ((forall psi: o, In psi ps -> judgement v (knowledge a psi))
@@ -88,14 +92,16 @@ intro a.
 apply kI with nil.
 intro psi.
 intro ques.
-absurd (In psi nil).
-auto.
-auto.
+apply False_ind.
+apply ques.
 intro v.
 intro everywhere.
 apply valid.
 reflexivity.
 Qed.
+
+Print everywherek00.
+Print False_ind.
 
 Lemma skk: forall (u:U) (phi:o),
   judgement u (supset phi phi).
@@ -113,9 +119,8 @@ Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   apply kI with nil.
   intro psi.
   intro ab.
-  absurd (In psi nil).
-  auto.
-  auto.
+  apply False_ind.
+  apply ab.
   intro v.
   intro psi.
   apply skk.
@@ -140,18 +145,60 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   apply veeIr.
   exact righty.
   Qed.
-  
+
+Lemma supset_meta:  
+  forall P Q: Prop,
+    (P->Q) -> (forall u:U, judgement u (supset (embed P) (embed Q))).
+  intros P Q.
+  intro meta.
+  intro u.
+  apply supsetI.
+  intro pre.
+  apply mp with P.
+  exact meta.
+  exact pre.
+  Qed.
+
+
+Lemma disj_distr:
+  forall L M:Prop,
+    (forall (u:U),
+      (judgement u (vee (embed L) (embed M)) ->
+        (judgement u (embed (L\/M))))).
+  intros L M u.
+  intro sem.
+  apply veeE with (embed L) (embed M).
+  exact sem.
+  apply mp.
+  intro l.
+  left.
+  exact l.
+  apply mp.
+  intro r.
+  right.
+  exact r.
+  Qed.
 
 Lemma disj_meta:
-  forall (u:U) (phi psi:o),
-  (judgement u (vee phi psi)) -> (judgement u phi) \/ judgement u psi.
-intro u.
-intro phi.
-intro psi.
+ forall L M:Prop, (forall (u:U), (judgement u (vee (embed L) (embed M)))) -> L\/M.
+intro L.
+intro M.
 intro formal.
-
+apply back.
+intro u.
+apply veeE with (embed L) (embed M).
+apply formal.
+apply mp.
+intro.
+left.
+exact H.
+apply mp.
+intro.
+right.
+exact H.
+Qed.
   
-Section consistency.
+Section sequential_consistency.
 Parameter shmem th0 th1: agent.
 Axiom write0:
   forall (psi: o) (u: U),
@@ -169,10 +216,132 @@ Axiom sequential_consistency:
 
 Lemma comm:
   forall (phi psi: o) (u: U),
-    judgement u (knowledge th0 phi) ->
-    judgement u (knowledge th1 psi) ->
-    (judgement u (knowledge th0 psi)) 
-      
-    
-
-
+    (judgement u (knowledge th0 phi)) ->
+    (judgement u (knowledge th1 psi)) ->
+    (judgement u (vee (knowledge th0 psi) (knowledge th1 phi))).
+  intros phi psi u.
+  intros init0 init1.
+  apply veeE with 
+    (supset
+      (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+      (knowledge th0 (knowledge shmem (knowledge th1 psi))))
+    (supset
+      (knowledge th1 (knowledge shmem (knowledge th1 psi)))
+      (knowledge th1 (knowledge shmem (knowledge th0 psi)))).
+  apply veeE with
+    (knowledge th1 (knowledge th0
+      (supset
+        (knowledge shmem (knowledge th0 phi))
+        (knowledge shmem (knowledge th1 psi)))))
+    (knowledge th1 (knowledge th0
+      (supset
+        (knowledge shmem (knowledge th1 psi))
+        (knowledge shmem (knowledge th0 phi))))).
+  apply Kvee with 
+    (knowledge th0 (supset (knowledge shmem (knowledge th0 phi))
+      (knowledge shmem (knowledge th1 psi))))
+    (knowledge th0 (supset (knowledge shmem (knowledge th1 psi))
+      (knowledge shmem (knowledge th0 phi))))
+    th1.
+  apply kI with nil.
+  intro psi0.
+  intro abs.
+  apply False_ind.
+  apply abs.
+  intro v.
+  intro psi0.
+  apply Kvee with
+    (supset (knowledge shmem (knowledge th0 phi))
+              (knowledge shmem (knowledge th1 psi)))
+    (supset (knowledge shmem (knowledge th1 psi))
+              (knowledge shmem (knowledge th0 phi)))
+    th0.
+  apply kI with nil.
+  intro psi1.
+  intro pre.
+  apply False_ind.
+  apply pre.
+  intro v0.
+  intro psi1.
+  apply sequential_consistency.
+  intro lef.
+  apply veeIl.
+  exact lef.
+  intro rig.
+  apply veeIr.
+  exact rig.
+  intro pre.
+  apply veeIl.
+  exact pre.
+  intro pre.
+  apply veeIr.
+  exact pre.
+  intro pre.
+  apply veeIl.
+  apply supsetI.
+  intro th0mem0.
+  apply kI with 
+    (cons (knowledge shmem (knowledge th0 phi))
+      (cons
+        (supset
+          (knowledge shmem (knowledge th0 phi))
+          (knowledge shmem (knowledge th1 psi)))
+        nil)).
+  intro phi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact th0mem0.
+  induction H.
+  rewrite <- H.
+  apply kE with th1.
+  exact pre.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro psi0.
+  apply supsetE with (knowledge shmem (knowledge th0 phi)).
+  apply kE with th0.
+  apply psi0.
+  apply in_cons.
+  apply in_eq.
+  apply kE with th0.
+  apply psi0.
+  apply in_eq.
+  intro rit.
+  apply veeIr.
+  apply supsetI.
+  intro pre.
+  apply kI with
+    (knowledge shmem (knowledge th1 psi) ::
+      (supset (knowledge shmem (knowledge th1 psi))
+                   (knowledge shmem (knowledge th0 phi))) ::
+      nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact pre.
+  induction H.
+  rewrite <- H.
+  apply kI with
+    ((knowledge th0
+                (supset (knowledge shmem (knowledge th1 psi))
+                   (knowledge shmem (knowledge th0 phi)))) :: nil).
+  intro psi1.
+  intro contain.
+  induction contain.
+  rewrite <- H0.
+  exact rit.
+  apply False_ind.
+  apply H0.
+  intro v.
+  intro psi1.
+  apply kE with th0.
+  apply kE with th1.
+  apply psi1.
+  apply in_eq.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro psi0.
