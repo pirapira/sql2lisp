@@ -10,51 +10,49 @@ Parameter current: U.
 Parameter o: Type.
 
 (* Model Properties *)
-Parameter judgement : U -> o -> Prop.
+Parameter judgement : U -> o -> Set.
 
 (* Syntax *)
-Parameter embed : Prop -> o.
+Parameter embed : Set -> o.
 Parameter knowledge : agent -> o -> o.
 Parameter vee: o->o->o.
 Parameter wedge: o->o->o.
 Parameter supset: o->o->o.
 Parameter ff: o.
 
-Definition validity (phi : o) : Prop :=
-  forall u:U, judgement u phi.
-
 (* Model Property *)
-Axiom valid: forall P: Prop,
-  P -> validity (embed P).
-Axiom back: forall P: Prop,
-  judgement current (embed P) -> P.
-
+Axiom valid: forall S: Set, forall (x:S),
+  forall (u:U), has_elm (judgement u (embed S)).
+Axiom back: forall S: Set,
+  judgement current (embed S) -> S.
 
 Axiom mp:
-  forall P Q: Prop,
-    (P -> Q) -> (forall u: U, judgement u (embed P) -> judgement u (embed Q)).
+  forall P Q: Set,
+    (P -> Q) -> (forall u: U,
+      judgement u (embed P) -> judgement u (embed Q)).
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
   judgement u (knowledge a phi) -> judgement u phi.
 
 Axiom kI: forall phi: o, forall ps: list o, forall u: U, forall a: agent,
-  (forall psi: o, In psi ps -> judgement u (knowledge a psi)) ->
-  (forall v: U, ((forall psi: o, In psi ps -> judgement v (knowledge a psi))
-    -> judgement v phi)) ->
-  judgement u (knowledge a phi).
+  (forall psi: o, In psi ps -> (has_elm (judgement u (knowledge a psi)))) ->
+  (forall v: U, ((forall psi: o, In psi ps ->
+    has_elm (judgement v (knowledge a psi)))
+    -> (has_elm (judgement v phi)))) ->
+  has_elm (judgement u (knowledge a phi)).
 
 Axiom veeIl: forall phi:o, forall psi:o, forall u:U,
-  judgement u phi -> judgement u (vee phi psi).
+  (judgement u phi) -> (judgement u (vee phi psi).
 
 Axiom veeIr: forall phi:o, forall psi:o, forall u:U,
   judgement u psi -> judgement u (vee phi psi).
 
 Axiom veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
-  judgement u (vee phi psi) ->
+  (has_elm (judgement u (vee phi psi))) ->
   (judgement u phi -> judgement u theta) ->
   (judgement u psi -> judgement u theta) ->
-  judgement u theta.
+  (has_elm judgement u theta).
 
 Axiom wedgeI: forall phi:o, forall psi:o, forall u: U,
   judgement u phi ->
@@ -84,9 +82,10 @@ Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:age
   judgement u theta.
 
 
-Lemma disj_current_embed: forall (L M: Prop),
-  judgement current (vee (embed L) (embed M)) ->
-  L \/ M.
+Lemma disj_current_embed: forall (L M: Set),
+  (has_elm (judgement current (vee (embed L) (embed M)))) ->
+    (has_elm (judgement current (embed L))) \/
+    (has_elm (judgement current (embed M))).
   intros L M.
   intro pre.
   apply back.
@@ -575,10 +574,32 @@ Lemma comm:
   apply in_eq.
   Qed.
 
+Lemma meta_comm:
+  forall (phi psi: o),
+    judgement current (knowledge th0 phi) ->
+    judgement current (knowledge th1 psi) ->
+    judgement current (knowledge th0 psi) \/
+    judgement current (knowledge th1 phi).
+  intros phi psi.
+  intros one two.
+  apply disj_current_embed.
+  apply veeE with (knowledge th0 psi) (knowledge th1 phi).
+  apply comm.
+  exact one.
+  exact two.
+  intro onegoal.
+  apply veeIl.
+  apply valid.
+  exact onegoal.
+  intro twogoal.
+  apply veeIr.
+  apply valid.
+  exact twogoal.
+  Qed.
+
+  
+
 End sequential_consistency.
 
 
-
-Extraction Language Haskell.
-Extraction comm.
-          
+Recursive Extraction meta_comm.
