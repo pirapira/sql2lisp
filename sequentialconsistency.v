@@ -532,6 +532,12 @@ End sequential_consistency.
 
 Extraction Language Haskell.
 Extraction motto_comm.
+Extraction more_comm.
+Extraction comm.
+
+(* TODO: replace vee, wedge, and supset with native Coq connectives.
+   and make rules for those constants lemmas not axioms. *)
+
 
 
 
