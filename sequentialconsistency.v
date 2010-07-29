@@ -10,10 +10,12 @@ Parameter current: U.
 Parameter o: Type.
 
 (* Model Properties *)
-Parameter judgement : U -> o -> Prop.
+Parameter paraset: U -> o -> Set.
+Definition judgement (u:U) (phi:o):Prop :=
+  exists x: paraset u phi, x = x.
 
 (* Syntax *)
-Parameter embed : Prop -> o.
+Parameter embed : Set -> o.
 Parameter knowledge : agent -> o -> o.
 Parameter vee: o->o->o.
 Parameter wedge: o->o->o.
@@ -24,14 +26,17 @@ Definition validity (phi : o) : Prop :=
   forall u:U, judgement u phi.
 
 (* Model Property *)
-Axiom valid: forall P: Prop,
-  P -> validity (embed P).
-Axiom back: forall P: Prop,
-  judgement current (embed P) -> P.
+Axiom valid: forall S: Set,
+  forall u:U, S -> judgement u (embed S).
 
+Axiom back: forall S: Set,
+  judgement current (embed S) -> S.
+
+Axiom validback:
+  forall S: Set, forall x: S, back S (valid S current x) = x.
 
 Axiom mp:
-  forall P Q: Prop,
+  forall P Q: Set,
     (P -> Q) -> (forall u: U, judgement u (embed P) -> judgement u (embed Q)).
 
 (* Proof Rules *)
@@ -84,9 +89,10 @@ Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:age
   judgement u theta.
 
 
-Lemma disj_current_embed: forall (L M: Prop),
+Lemma disj_current_embed: forall (L M: Set),
   judgement current (vee (embed L) (embed M)) ->
-  L \/ M.
+  judgement current (embed L) \/
+  judgement current (embed M).
   intros L M.
   intro pre.
   apply back.
@@ -94,9 +100,11 @@ Lemma disj_current_embed: forall (L M: Prop),
   exact pre.
   apply mp.
   left.
+  apply valid.
   exact H.
   apply mp.
   right.
+  apply valid.
   exact H.
   Qed.
 
@@ -575,10 +583,82 @@ Lemma comm:
   apply in_eq.
   Qed.
 
+Lemma more_comm:
+  forall (phi psi: o),
+    judgement current (knowledge th0 phi) ->
+    judgement current (knowledge th1 psi) ->
+    (judgement current (knowledge th0 psi) \/
+    judgement current (knowledge th1 phi)).
+intros phi psi.
+intros one two.
+apply disj_current.
+apply comm.
+exact one.
+exact two.
+Qed.
+
+Lemma parajudge:
+  forall (phi: o), forall (u:U),
+    paraset u phi -> judgement u phi.
+intros phi u pre.
+exists pre.
+reflexivity.
+Qed.
+
+Lemma motto_comm:
+  forall (L M: Set),
+    paraset current (knowledge th0 (embed L)) ->
+    paraset current (knowledge th1 (embed M)) ->
+    (judgement current (knowledge th0 (embed M)) \/
+     judgement current (knowledge th1 (embed L))).
+intros L M one two.
+apply more_comm.
+apply parajudge.
+exact one.
+apply parajudge.
+exact two.
+Qed.
+
+Lemma motto_comm:
+  forall (L M: Set),
+    paraset current (knowledge th0 (embed L)) ->
+    paraset current (knowledge th1 (embed M)) ->
+    (judgement current (knowledge th0 (embed M)) \/
+     judgement current (knowledge th1 (embed L))).
+intros L M one two.
+apply more_comm.
+apply parajudge.
+exact one.
+apply parajudge.
+exact two.
+Qed.
+
+Lemma disjcalc:
+  forall L M K: Prop,
+    L \/ M ->
+  (M -> K) -> (L -> K) -> K.
+intros L M K.
+intro disj.
+intro mk.
+intro lk.
+elim disj.
+exact lk.
+exact mk.
+Qed.
+
+
+Parameter L: Set.
+Parameter M: Set.
+
+Inductive
+  sum :Set := inl: sum | inr: sum.
+
+
+
 End sequential_consistency.
 
 
 
 Extraction Language Haskell.
-Extraction comm.
+Extraction motto_comm.
           
