@@ -225,7 +225,6 @@ intro L.
 intro M.
 intro formal.
 apply back.
-intro u.
 apply veeE with (embed L) (embed M).
 apply formal.
 apply mp.
@@ -249,7 +248,7 @@ Lemma simplerKvee:
   exact pre.
   apply veeIl.
   apply veeIr.
-  Qed. 
+  Qed.
 
 (* prove disjunction property. Then we can use the extraction. *)
   
@@ -518,20 +517,68 @@ Axiom write0:
 Axiom write1:
   forall (psi: o) (u: U),
     judgement u (knowledge th1 psi) ->
-    judgement u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
+    judgement u (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+
 
 Lemma comm:
   forall (phi psi: o) (u:U),
     judgement u (knowledge th0 phi) ->
     judgement u (knowledge th1 psi) ->
     judgement u (vee
-    
-    
+      (knowledge th0 psi)
+      (knowledge th1 phi)).
+  intros phi psi u.
+  intro one.
+  intro two.
+  apply veeE with (knowledge th0 (knowledge th1 psi)) (knowledge th1 (knowledge th0 phi)).
+  apply supsetE with
+        (wedge
+          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
+          (knowledge th1 (knowledge shmem (knowledge th1 psi)))).
+  apply fig2.
+  apply wedgeI.
+  apply write0.
+  exact one.
+  apply write1.
+  exact two.
+  intro pre.
+  apply veeIl.
+  apply kI with ((knowledge th1 psi) :: nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact pre.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro gamma.
+  apply kE with th1.
+  apply kE with th0.
+  apply gamma.
+  apply in_eq.
+  intro pre.
+  apply veeIr.
+  apply kI with ((knowledge th0 phi) :: nil).
+  intro psi0.
+  intro contain.
+  induction contain.
+  rewrite <- H.
+  exact pre.
+  apply False_ind.
+  apply H.
+  intro v.
+  intro gamma.
+  apply kE with th0.
+  apply kE with th1.
+  apply gamma.
+  apply in_eq.
+  Qed.
 
 End sequential_consistency.
 
 
 
 Extraction Language Haskell.
-Extraction fig2.
+Extraction comm.
           
