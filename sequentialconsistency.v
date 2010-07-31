@@ -1,5 +1,4 @@
 (* Avron et al. Encoding Modal Logics in Logical Frameworks *)
-
 Parameter agent : Set.
 
 Require Import List.
@@ -24,19 +23,6 @@ Require Import Coq.Sets.Uniset.
 Definition ff (u:U) := Emptyset.
 
 (* Model Property *)
-Lemma valid: forall S: Set,
-  forall u:U, S -> (embed S) u.
-intros S u.
-intros x.
-apply x.
-Qed.
-
-Lemma back: forall S: Set, forall u:U,
-  (embed S) u -> S.
-intros S u.
-intro x.
-apply x.
-Qed.
 
 
 Lemma mp:
@@ -550,7 +536,3 @@ Extraction B.
 (* TODO: replace vee, wedge, and supset with native Coq connectives.
    and make rules for those constants lemmas not axioms. *)
 
-
-
-
-          
