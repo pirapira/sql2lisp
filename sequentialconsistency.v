@@ -7,160 +7,171 @@ Require Import List.
 Parameter U : Type.
 Parameter current: U.
 
-Parameter o: Type.
-
-(* Model Properties *)
-Parameter paraset: U -> o -> Set.
+Definition o:= U -> Set.
 
 (* Syntax *)
-Parameter embed : Set -> o.
+Definition embed (S:Set) (_:U) := S.
+
 Parameter knowledge : agent -> o -> o.
-Parameter vee: o->o->o.
-Parameter wedge: o->o->o.
-Parameter supset: o->o->o.
-Parameter ff: o.
+Definition vee (phi:o) (psi:o) (u:U): Set :=
+  (sum (phi u)(psi u)).
+Definition wedge (phi:o) (psi:o) (u:U): Set :=
+  (prod (phi u)(psi u)).
+Definition supset (phi:o) (psi:o) (u:U): Set :=
+  (phi u) -> (psi u).
+
+Require Import Coq.Sets.Uniset.
+Definition ff (u:U) := Emptyset.
 
 (* Model Property *)
-Axiom valid: forall S: Set,
-  forall u:U, S -> paraset u (embed S).
+Lemma valid: forall S: Set,
+  forall u:U, S -> (embed S) u.
+intros S u.
+intros x.
+apply x.
+Qed.
 
-Axiom back: forall S: Set,
-  paraset current (embed S) -> S.
+Lemma back: forall S: Set, forall u:U,
+  (embed S) u -> S.
+intros S u.
+intro x.
+apply x.
+Qed.
 
-Axiom validback:
-  forall S: Set, forall x: S, back S (valid S current x) = x.
 
-Axiom mp:
+Lemma mp:
   forall P Q: Set,
-    (P -> Q) -> (forall u: U, paraset u (embed P) -> paraset u (embed Q)).
+    (P -> Q) -> (forall u: U, (embed P) u -> (embed Q) u).
+intros P Q.
+intro orig.
+intro u.
+intro x.
+exact (orig x).
+Qed.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  paraset u (knowledge a phi) -> paraset u phi.
+  (knowledge a phi) u -> phi u.
 
 Axiom kI: forall phi psi: o, forall u: U, forall a: agent,
-  paraset u (knowledge a psi) ->
-  (forall v: U, (paraset v (knowledge a psi))
-    -> paraset v phi) ->
-  paraset u (knowledge a phi).
+  (knowledge a psi) u ->
+  (forall v: U, ((knowledge a psi) v)
+    -> phi v) ->
+  (knowledge a phi) u.
 
 Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
-  paraset u (knowledge a psi0) -> paraset u (knowledge a psi1) ->
-  (forall v: U, (paraset v (knowledge a psi0)) -> (paraset v (knowledge a psi1))
-    -> paraset v phi) ->
-  paraset u (knowledge a phi).
+  (knowledge a psi0) u -> (knowledge a psi1) u ->
+  (forall v: U, (knowledge a psi0) v -> (knowledge a psi1) v
+    -> phi v) ->
+  (knowledge a phi) u.
 
 Axiom kI0: forall phi: o, forall u: U, forall a: agent,
-  (forall v: U, paraset v phi) ->
-  paraset u (knowledge a phi).
+  (forall v: U, phi v) ->
+  (knowledge a phi) u.
 
-Axiom veeIl: forall phi:o, forall psi:o, forall u:U,
-  paraset u phi -> paraset u (vee phi psi).
+Lemma veeIl: forall phi:o, forall psi:o, forall u:U,
+  phi u -> (vee phi psi) u.
+intros phi psi u.
+intro orig.
+left.
+exact orig.
+Qed.
 
-Axiom veeIr: forall phi:o, forall psi:o, forall u:U,
-  paraset u psi -> paraset u (vee phi psi).
+Lemma veeIr: forall phi:o, forall psi:o, forall u:U,
+  psi u -> (vee phi psi) u.
+intros phi psi u.
+intro orig.
+right.
+exact orig.
+Qed.
 
-Axiom veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
-  paraset u (vee phi psi) ->
-  (paraset u phi -> paraset u theta) ->
-  (paraset u psi -> paraset u theta) ->
-  paraset u theta.
+Lemma veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
+  (vee phi psi) u ->
+  (phi u -> theta u) ->
+  (psi u -> theta u) ->
+  theta u.
+intros phi psi theta u.
+intros disj le ri.
+case disj.
+exact le.
+exact ri.
+Qed.
 
-Axiom wedgeI: forall phi:o, forall psi:o, forall u: U,
-  paraset u phi ->
-  paraset u psi ->
-  paraset u (wedge phi psi).
+Lemma wedgeI: forall phi:o, forall psi:o, forall u: U,
+  phi u ->
+  psi u ->
+  (wedge phi psi) u.
+intros phi psi u.
+intro one.
+intro two.
+split.
+exact one.
+exact two.
+Qed.
 
-Axiom wedgeEl: forall phi:o, forall psi:o, forall u:U,
-  paraset u (wedge phi psi) ->
-  paraset u phi.
+Lemma wedgeEl: forall phi:o, forall psi:o, forall u:U,
+  (wedge phi psi) u ->
+  phi u.
+intros phi psi u.
+intro orig.
+elim orig.
+intro one.
+intro irrelevant.
+exact one.
+Qed.
 
-Axiom wedgeEr: forall phi:o, forall psi:o, forall u:U,
-  paraset u (wedge phi psi) ->
-  paraset u psi.
+Lemma wedgeEr: forall phi:o, forall psi:o, forall u:U,
+  (wedge phi psi) u ->
+  psi u.
+intros phi psi u.
+intro orig.
+elim orig.
+intro irrelevant.
+intro two.
+exact two.
+Qed.
 
-Axiom supsetI: forall phi:o, forall psi:o, forall u:U,
-  (paraset u phi -> paraset u psi) -> paraset u (supset phi psi).
+Lemma supsetI: forall phi:o, forall psi:o, forall u:U,
+  (phi u -> psi u) -> (supset phi psi) u.
+intros phi psi u.
+intro orig.
+exact orig.
+Qed.
 
-Axiom supsetE: forall phi:o, forall psi:o, forall u:U,
-  paraset u (supset phi psi) ->
-  paraset u phi ->
-  paraset u psi.
+Lemma supsetE: forall phi:o, forall psi:o, forall u:U,
+  (supset phi psi) u->
+  phi u ->
+  psi u.
+intros phi psi u.
+intro orig.
+exact orig.
+Qed.
 
 Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
-  paraset u (knowledge a (vee phi psi)) ->
-  (paraset u (knowledge a phi) -> paraset u theta) ->
-  (paraset u (knowledge a psi) -> paraset u theta) ->
-  paraset u theta.
-
-
-Lemma disj_current_embed: forall (L M: Set),
-  paraset current (vee (embed L) (embed M)) ->
-  paraset current (embed L) +
-  paraset current (embed M).
-  intros L M.
-  intro pre.
-  apply back.
-  apply veeE with (embed L) (embed M).
-  exact pre.
-  apply mp.
-  left.
-  apply valid.
-  exact H.
-  apply mp.
-  right.
-  apply valid.
-  exact H.
-  Qed.
+  (knowledge a (vee phi psi)) u ->
+  ((knowledge a phi) u -> theta u) ->
+  ((knowledge a psi) u -> theta u) ->
+  theta u.
 
 Lemma disj_current: forall (phi psi: o),
-  paraset current (vee phi psi) ->
-  paraset current phi + paraset current psi.
+  (vee phi psi) current ->
+  phi current +  psi current.
   intros phi psi.
   intro pre.
-  apply back.
-  apply veeE with phi psi.
   exact pre.
-  intro two.
-  apply valid.
-  left.
-  exact two.
-  intro two.
-  apply valid.
-  right.
-  exact two.
   Qed.
 
-
-Lemma everywhere00: forall u:U, paraset u (embed (0 = 0)).
-intro u.
-apply valid.
-reflexivity.
-Qed.
-
-Lemma everywherek00: forall u:U, forall a:agent,
-  paraset u (knowledge a (embed (0 = 0))).
-intro u.
-intro a.
-apply kI0.
-intro v.
-apply valid.
-reflexivity.
-Qed.
-
-Print everywherek00.
-Print False_ind.
-
 Lemma skk: forall (u:U) (phi:o),
-  paraset u (supset phi phi).
+  (supset phi phi) u.
   intro u.
   intro phi.
   apply supsetI.
-  auto.
+  intro one.
+  exact one.
   Qed.
 
 Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
-  paraset u (knowledge a (supset phi phi)).
+  (knowledge a (supset phi phi)) u.
   intro u.
   intro phi.
   intro a.
@@ -170,9 +181,9 @@ Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   Qed.
 
 Lemma kv: forall (u:U) (phi psi:o) (a:agent),
-  paraset u (supset
+  (supset
     (knowledge a (vee phi psi))
-    (vee (knowledge a phi) (knowledge a psi))).
+    (vee (knowledge a phi) (knowledge a psi))) u.
   intro u.
   intro phi.
   intro psi.
@@ -193,8 +204,8 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
 Lemma disj_distr:
   forall L M:Set,
     (forall (u:U),
-      (paraset u (vee (embed L) (embed M)) ->
-        (paraset u (embed (L+M))))).
+      ((vee (embed L) (embed M) u) ->
+        ((embed (L+M)) u))).
   intros L M u.
   intro sem.
   apply veeE with (embed L) (embed M).
@@ -211,9 +222,9 @@ Lemma disj_distr:
 
 Lemma simplerKvee:
   forall (u: U) (phi psi: o) (a:agent),
-    (paraset u (knowledge a (vee phi psi))) ->
-    (paraset u (vee (knowledge a phi)
-      (knowledge a psi))).
+    ((knowledge a (vee phi psi)) u) ->
+    ((vee (knowledge a phi)
+      (knowledge a psi)) u).
   intros u phi psi a.
   intro pre.
   apply Kvee with phi psi a.
@@ -228,23 +239,22 @@ Section sequential_consistency.
 Parameter shmem th0 th1: agent.
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
-    paraset u
     (vee (supset (knowledge shmem phi) (knowledge shmem psi))
-      (supset (knowledge shmem psi) (knowledge shmem phi))).
+      (supset (knowledge shmem psi) (knowledge shmem phi))) u.
 
 
 Lemma Cleft:
   forall (phi psi: o) (u: U) (ei bee: agent),
-    (paraset u
+    (
       (supset
         (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi))))) ->
-    (paraset u
+        (knowledge ei (knowledge shmem (knowledge bee psi)))) u) ->
+    (
       (wedge
         (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge bee (knowledge shmem (knowledge bee psi))))) ->
-    (paraset u
-      (knowledge ei (knowledge shmem (knowledge bee psi)))).
+        (knowledge bee (knowledge shmem (knowledge bee psi)))) u) ->
+    (
+      (knowledge ei (knowledge shmem (knowledge bee psi))) u).
   intros phi psi u ei bee.
   intro one.
   intro two.
@@ -256,16 +266,16 @@ Lemma Cleft:
 
 Lemma C:
   forall (phi psi: o) (u: U) (ei bee:agent),
-    (paraset u
+    (
       (supset
         (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi))))) ->
-    (paraset u
+        (knowledge ei (knowledge shmem (knowledge bee psi)))) u) ->
+    (
       (wedge
         (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge bee (knowledge shmem (knowledge bee psi))))) ->
-    (paraset u
-      (knowledge ei (knowledge bee psi))).
+        (knowledge bee (knowledge shmem (knowledge bee psi)))) u) ->
+    (
+      (knowledge ei (knowledge bee psi)) u).
   intros phi psi u ei bee.
   intros one two.
   apply supsetE with (knowledge ei (knowledge shmem (knowledge bee psi))).
@@ -285,13 +295,13 @@ Lemma C:
 
 Lemma Aright:
   forall (phi psi: o) (u: U) (th0 th1: agent),
-    (paraset u (knowledge th0 (knowledge shmem (knowledge th0 phi)))) ->
-    (paraset u
+    ((knowledge th0 (knowledge shmem (knowledge th0 phi))) u) ->
+    (
       (supset
         (knowledge th0 (supset
           (knowledge shmem (knowledge th0 phi))
           (knowledge shmem (knowledge th1 psi))))
-        (knowledge th0 (knowledge shmem (knowledge th1 psi))))).
+        (knowledge th0 (knowledge shmem (knowledge th1 psi)))) u).
   intros phi psi u ei bee.
   intro hidari.
   apply supsetI.
@@ -313,17 +323,17 @@ Lemma Aright:
 
 Lemma Aone:
   forall (phi psi: o) (u: U) (ei bee: agent),
-    (paraset u
+    (
       (knowledge bee (knowledge ei (supset
         (knowledge shmem (knowledge ei phi))
-        (knowledge shmem (knowledge bee psi)))))) ->
-    (paraset u (vee
+        (knowledge shmem (knowledge bee psi))))) u) ->
+    ((vee
       (supset
         (knowledge ei (knowledge shmem (knowledge ei phi)))
         (knowledge ei (knowledge shmem (knowledge bee psi))))
       (supset
         (knowledge bee (knowledge shmem (knowledge bee psi)))
-        (knowledge bee (knowledge shmem (knowledge ei phi)))))).
+        (knowledge bee (knowledge shmem (knowledge ei phi))))) u).
   intros phi psi u ei bee.
   intro pre.
   apply veeIl.
@@ -341,17 +351,17 @@ Lemma Aone:
 
 Lemma Atwo:
   forall (phi psi: o) (u: U) (ei bee: agent),
-    (paraset u
+    (
       (knowledge bee (knowledge ei (supset
         (knowledge shmem (knowledge ei phi))
-        (knowledge shmem (knowledge bee psi)))))) ->
-    (paraset u (vee
+        (knowledge shmem (knowledge bee psi))))) u) ->
+    ((vee
       (supset
         (knowledge ei (knowledge shmem (knowledge ei phi)))
         (knowledge ei (knowledge shmem (knowledge bee psi))))
       (supset
         (knowledge bee (knowledge shmem (knowledge bee psi)))
-        (knowledge bee (knowledge shmem (knowledge ei phi)))))).
+        (knowledge bee (knowledge shmem (knowledge ei phi))))) u).
   intros phi psi u ei bee.
   intro pre.
   apply veeIl.
@@ -369,14 +379,14 @@ Lemma Atwo:
 
 Lemma B:
   forall (phi psi: o) (u: U),
-    (paraset u
+    (
       (vee
         (supset
           (knowledge th0 (knowledge shmem (knowledge th0 phi)))
           (knowledge th0 (knowledge shmem (knowledge th1 psi))))
         (supset
           (knowledge th1 (knowledge shmem (knowledge th1 psi)))
-          (knowledge th1 (knowledge shmem (knowledge th0 phi)))))).
+          (knowledge th1 (knowledge shmem (knowledge th0 phi))))) u).
   intros phi psi u.
   apply veeE with 
     (knowledge th1 (knowledge th0 (supset
@@ -415,14 +425,14 @@ Lemma B:
 
 Lemma fig2:
   forall (phi psi: o) (u: U),
-    (paraset u
+    (
       (supset
         (wedge
           (knowledge th0 (knowledge shmem (knowledge th0 phi)))
           (knowledge th1 (knowledge shmem (knowledge th1 psi))))
         (vee
           (knowledge th0 (knowledge th1 psi))
-          (knowledge th1 (knowledge th0 phi))))).
+          (knowledge th1 (knowledge th0 phi)))) u).
   intros phi psi u.
   apply supsetI.
   intro pre.
@@ -454,21 +464,21 @@ Qed.
 
 Axiom write0:
   forall (psi: o) (u: U),
-  paraset u (knowledge th0 psi) ->
-  paraset u (knowledge th0 (knowledge shmem (knowledge th0 psi))).
+  (knowledge th0 psi) u->
+   (knowledge th0 (knowledge shmem (knowledge th0 psi))) u.
 Axiom write1:
   forall (psi: o) (u: U),
-    paraset u (knowledge th1 psi) ->
-    paraset u (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+     (knowledge th1 psi) u ->
+     (knowledge th1 (knowledge shmem (knowledge th1 psi))) u.
 
 
 Lemma comm:
   forall (phi psi: o) (u:U),
-    paraset u (knowledge th0 phi) ->
-    paraset u (knowledge th1 psi) ->
-    paraset u (vee
+    (knowledge th0 phi) u ->
+    (knowledge th1 psi) u ->
+    (vee
       (knowledge th0 psi)
-      (knowledge th1 phi)).
+      (knowledge th1 phi)) u .
   intros phi psi u.
   intro one.
   intro two.
@@ -505,10 +515,10 @@ Lemma comm:
 
 Lemma more_comm:
   forall (phi psi: o),
-    paraset current (knowledge th0 phi) ->
-    paraset current (knowledge th1 psi) ->
-    (paraset current (knowledge th0 psi) +
-    paraset current (knowledge th1 phi)).
+     (knowledge th0 phi) current ->
+     (knowledge th1 psi) current ->
+    ( (knowledge th0 psi) current +
+     (knowledge th1 phi) current).
 intros phi psi.
 intros one two.
 apply disj_current.
@@ -519,10 +529,10 @@ Qed.
 
 Lemma motto_comm:
   forall (L M: Set),
-    paraset current (knowledge th0 (embed L)) ->
-    paraset current (knowledge th1 (embed M)) ->
-    (paraset current (knowledge th0 (embed M)) +
-     paraset current (knowledge th1 (embed L))).
+     (knowledge th0 (embed L)) current ->
+ (knowledge th1 (embed M)) current ->
+    ( (knowledge th0 (embed M)) current +
+      (knowledge th1 (embed L)) current).
   intros L M.
 apply more_comm.
 Qed.
@@ -534,6 +544,8 @@ Extraction Language Haskell.
 Extraction motto_comm.
 Extraction more_comm.
 Extraction comm.
+Extraction fig2.
+Extraction B.
 
 (* TODO: replace vee, wedge, and supset with native Coq connectives.
    and make rules for those constants lemmas not axioms. *)
