@@ -40,29 +40,93 @@ Defined.
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
   (knowledge a phi) u -> phi u.
 
-Check existS.
+Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
+  match orig with
+    | nil => unit
+    | cons h tl =>
+      (prod ((knowledge a h) u) (all_knowledge u a tl))
+  end.
 
-Axiom kI0: forall phi: o, forall u: U, forall a: agent,
-  (* how to represent infinite intersection? *)
-  (forall v: U, phi v) ->
-  (knowledge a phi) u.
+Axiom kI: 
+  forall (phi:o) (psi: list o) (u:U) (a:agent),
+    (all_knowledge u a psi) ->
+    (forall (v: U),
+      (all_knowledge v a psi) -> phi v) ->
+    (knowledge a phi) u.
 
-(* in order to state conversion rules, we shoud not mention embed *)
-Section kEkI0.
-  Variable phi: o.
-  Variable u: U.
-  Variable x: forall v:U, phi v.
-  Print kI0.
-  Variable a:agent.
-  Check kI0.
-  Let depo := (kI0 phi u a x) : (knowledge a phi u).
-  Check kE phi u a.
-  Let back := (kE phi u a depo).
-  Axiom kEkI0: back = x u.
-End kEkI0.
+(* as a macro, define kI0 *)
 
-Check kEkI0.
+Definition kI0:
+  forall (phi:o) (u:U) (a: agent),
+    (forall (v:U), phi v) ->
+    (knowledge a phi) u.
+intros phi u a pre.
+apply kI with nil.
+exact tt.
+clear u.
+intro v.
+intro unneeded.
+clear unneeded a.
+apply pre.
+Defined.
+
+Definition kI1:
+  forall (phi:o) (psi: o) (u:U) (a:agent)
+    (x: (knowledge a psi) u)
+    (f:
+      forall (v:U),
+        (knowledge a psi) v
+      -> phi v),
+    (knowledge a phi) u.
+intros phi psi u a x f.
+apply kI with (psi :: nil).
+split.
+exact x.
+compute.
+exact tt.
+intro v.
+clear u x.
+intro pre.
+apply f.
+apply pre.
+Defined.
+
+Print kI1.
+
   
+
+Section kEkI.
+  Variable u: U.
+  Variable phi: o.
+  Variable psi: list o.
+  Variable a: agent.
+  Variable x:
+    forall p:o, List.In p psi -> (knowledge a p) u.
+  Variable f:
+    forall (v:U),
+      (forall p:o, List.In p psi ->
+      (knowledge a p) v)
+      -> phi v.
+
+  Check kI.
+  Check kI phi psi.
+  Check kI phi psi u a.
+  Check kI phi psi u a x f.
+  Check kI phi psi u a x f : knowledge a phi u.
+  (* kEkI route *)
+  Check kE.
+  Check kE phi u a (kI phi psi u a x f) : phi u.
+
+  (* straight route *)
+  Check f u.
+  Check f u x : phi u.
+
+  Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
+End kEkI.
+
+Print kEkI.
+
+
 Parameter shmem th0 th1: agent.
 
 Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
@@ -79,68 +143,28 @@ intro v.
 exact O.
 Defined.
 
+Definition nileater : forall p : o, List.In p nil -> knowledge th0 p current.
+intro p.
+intro abs.
+absurd (List.In p nil).
+apply in_nil.
+exact abs.
+Defined.
+
+Definition z : forall v:U,
+  (forall (p:o), List.In p nil -> knowledge th0 p v) ->
+  (embed nat) v.
+intros v f.
+generalize v.
+exact formalzero.
+Defined.
+
 Lemma backzero:
-  kE (embed nat) current th0 (kI0 (embed nat) current th0 formalzero) =
+  kE (embed nat) current th0 (kI (embed nat) nil current th0 nileater z) =
        formalzero current.
-  apply kEkI0.
+  apply kEkI.
   Qed.
 
-Axiom kI: forall phi psi: o, forall u: U, forall a: agent,
-  (knowledge a psi) u ->
-  (forall v: U, ((knowledge a psi) v)
-    -> phi v) ->
-  (knowledge a phi) u.
-
-Section kEkI.
-  Variable u: U.
-  Variable phi psi: o.
-  Variable a: agent.
-  Variable x: (knowledge a psi) u.
-  Variable f: forall (v:U), (knowledge a psi) v -> phi v.
-  Check kI.
-  Check kI phi psi.
-  Check kI phi psi u a.
-  Check kI phi psi u a x f.
-  Check kI phi psi u a x f : knowledge a phi u.
-  (* kEkI route *)
-  Check kE.
-  Check kE phi u a (kI phi psi u a x f) : phi u.
-
-  (* straight route *)
-  Check f u : knowledge a psi u -> phi u.
-  Check f u x : phi u.
-
-  Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
-End kEkI.
-
-Print kEkI.
-
-Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
-  (knowledge a psi0) u -> (knowledge a psi1) u ->
-  (forall v: U, (knowledge a psi0) v -> (knowledge a psi1) v
-    -> phi v) ->
-  (knowledge a phi) u.
-
-Section kEkI2.
-  Variable u: U.
-  Variable phi psi0 psi1: o.
-  Variable a: agent.
-  Variable x0: (knowledge a psi0) u.
-  Variable x1: (knowledge a psi1) u.
-  Variable f: forall (v:U), (knowledge a psi0) v -> (knowledge a psi1) v -> phi v.
-  Check kI2.
-  Check kI2 phi psi0 psi1.
-  Check kI2 phi psi0 psi1 u a x0 x1 f : knowledge a phi u.
-  Check kE phi u a (kI2 phi psi0 psi1 u a x0 x1 f) : phi u.
-
-  (* straight route *)
-  Check f u : knowledge a psi0 u -> knowledge a psi1 u -> phi u.
-  Check f u x0 x1 : phi u.
-
-  Axiom kEkI2: kE phi u a (kI2 phi psi0 psi1 u a x0 x1 f) = f u x0 x1.
-End kEkI2.
-
-Print kEkI2.
 
 Lemma veeIl: forall phi:o, forall psi:o, forall u:U,
   phi u -> (vee phi psi) u.
@@ -322,7 +346,6 @@ Defined.
 
 (* prove disjunction property. Then we can use the extraction. *)
   
-Parameter shmem th0 th1: agent.
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
     (vee (supset (knowledge shmem phi) (knowledge shmem psi))
@@ -367,7 +390,7 @@ Lemma C:
   apply supsetE with (knowledge ei (knowledge shmem (knowledge bee psi))).
   apply supsetI.
   intro zero.
-  apply kI with (knowledge shmem (knowledge bee psi)).
+  apply kI1 with (knowledge shmem (knowledge bee psi)).
   exact zero.
   intro v.
   intro psi0.
@@ -498,7 +521,7 @@ Lemma B:
     (knowledge shmem (knowledge th0 phi)))).
   apply Aright.
   exact two.
-  apply kI with (knowledge th0
+  apply kI1 with (knowledge th0
                 (supset (knowledge shmem (knowledge th1 psi))
                    (knowledge shmem (knowledge th0 phi)))).
   exact pre.
@@ -581,7 +604,7 @@ Lemma comm:
   exact two.
   intro pre.
   apply veeIl.
-  apply kI with (knowledge th1 psi).
+  apply kI1 with (knowledge th1 psi).
   exact pre.
   intro v.
   intro gamma.
@@ -590,7 +613,7 @@ Lemma comm:
   apply gamma.
   intro pre.
   apply veeIr.
-  apply kI with (knowledge th0 phi).
+  apply kI1 with (knowledge th0 phi).
   exact pre.
   intro v.
   intro gamma.
@@ -635,12 +658,12 @@ Axiom ask_user0: owned th0.
 Axiom ask_user1: owned th1.
 
 Check kI.
-Check kI (embed nat) (embed nat) current th0.
-Check kI (embed nat) (embed nat) current th0 ask_user0.
+Check kI1 (embed nat) (embed nat) current th0.
+Check kI1 (embed nat) (embed nat) current th0 ask_user0.
 
 Section remote_calc.
   Parameter f: nat->nat.
-  Check kI (embed nat) (embed nat) current th0 ask_user0.
+  Check kI1 (embed nat) (embed nat) current th0 ask_user0.
 End remote_calc.
 
 (* make calc0 not parameter, but a defined object *)
