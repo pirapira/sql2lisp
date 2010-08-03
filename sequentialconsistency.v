@@ -12,6 +12,7 @@ Definition o:= U -> Set.
 Definition embed (S:Set) (_:U) := S.
 
 Parameter knowledge : agent -> o -> o.
+
 Definition vee (phi:o) (psi:o) (u:U): Set :=
   (sum (phi u)(psi u)).
 Definition wedge (phi:o) (psi:o) (u:U): Set :=
@@ -221,7 +222,6 @@ Lemma simplerKvee:
 
 (* prove disjunction property. Then we can use the extraction. *)
   
-Section sequential_consistency.
 Parameter shmem th0 th1: agent.
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
@@ -524,7 +524,16 @@ apply more_comm.
 Qed.
 
 
-End sequential_consistency.
+Definition possessed (a:agent) (orig:Set) :=
+  (knowledge a (embed orig)) current.
+
+
+
+Axiom ask_user0: possessed th0 nat.
+Axiom ask_user1: possessed th1 nat.
+
+Check (kE (embed ask_user0) current th0).
+
 
 Extraction Language Haskell.
 
