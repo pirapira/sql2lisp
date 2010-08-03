@@ -34,11 +34,53 @@ intro orig.
 intro u.
 intro x.
 exact (orig x).
-Qed.
+Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
   (knowledge a phi) u -> phi u.
+
+Axiom kI0: forall phi: o, forall u: U, forall a: agent,
+  (forall v: U, phi v) ->
+  (knowledge a phi) u.
+
+Section kEkI0.
+  Variable s:Set.
+  Variable x: s.
+  Lemma pr: forall v:U, (embed s) v.
+    intro v.
+    compute.
+    exact x.
+  Defined.
+  Print pr.
+  Variable a: agent.
+  Axiom kEkI0: kE (embed s) current a (kI0 (embed s) current a pr) = x.
+End kEkI0.
+
+Parameter shmem th0 th1: agent.
+
+Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
+Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
+Definition look1 (n:owned th1) := kE (embed nat) current th1 n.
+Definition look (n:(owned th0 + owned th1)) :=
+  match n with
+      inl n => look0 n
+    | inr n => look1 n
+  end.
+
+Definition zero0: owned th0.
+  apply kI0.
+  intro v.
+  exact O.
+  Defined.
+
+Definition back: nat.
+  exact (kE (embed nat) current th0 zero0).
+  Defined.
+
+Lemma backzero: back = O.
+  apply kEkI0.
+  Qed.
 
 Axiom kI: forall phi psi: o, forall u: U, forall a: agent,
   (knowledge a psi) u ->
@@ -52,9 +94,6 @@ Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
     -> phi v) ->
   (knowledge a phi) u.
 
-Axiom kI0: forall phi: o, forall u: U, forall a: agent,
-  (forall v: U, phi v) ->
-  (knowledge a phi) u.
 
 Lemma veeIl: forall phi:o, forall psi:o, forall u:U,
   phi u -> (vee phi psi) u.
@@ -62,7 +101,7 @@ intros phi psi u.
 intro orig.
 left.
 exact orig.
-Qed.
+Defined.
 
 Lemma veeIr: forall phi:o, forall psi:o, forall u:U,
   psi u -> (vee phi psi) u.
@@ -70,7 +109,7 @@ intros phi psi u.
 intro orig.
 right.
 exact orig.
-Qed.
+Defined.
 
 Lemma veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
   (vee phi psi) u ->
@@ -82,7 +121,7 @@ intros disj le ri.
 case disj.
 exact le.
 exact ri.
-Qed.
+Defined.
 
 Lemma wedgeI: forall phi:o, forall psi:o, forall u: U,
   phi u ->
@@ -94,7 +133,7 @@ intro two.
 split.
 exact one.
 exact two.
-Qed.
+Defined.
 
 Lemma wedgeEl: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
@@ -105,7 +144,7 @@ elim orig.
 intro one.
 intro irrelevant.
 exact one.
-Qed.
+Defined.
 
 Lemma wedgeEr: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
@@ -116,14 +155,14 @@ elim orig.
 intro irrelevant.
 intro two.
 exact two.
-Qed.
+Defined.
 
 Lemma supsetI: forall phi:o, forall psi:o, forall u:U,
   (phi u -> psi u) -> (supset phi psi) u.
 intros phi psi u.
 intro orig.
 exact orig.
-Qed.
+Defined.
 
 Lemma supsetE: forall phi:o, forall psi:o, forall u:U,
   (supset phi psi) u->
@@ -132,7 +171,7 @@ Lemma supsetE: forall phi:o, forall psi:o, forall u:U,
 intros phi psi u.
 intro orig.
 exact orig.
-Qed.
+Defined.
 
 Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
   (knowledge a (vee phi psi)) u ->
@@ -146,7 +185,7 @@ Lemma disj_current: forall (phi psi: o),
   intros phi psi.
   intro pre.
   exact pre.
-  Qed.
+Defined.
 
 Lemma skk: forall (u:U) (phi:o),
   (supset phi phi) u.
@@ -155,7 +194,7 @@ Lemma skk: forall (u:U) (phi:o),
   apply supsetI.
   intro one.
   exact one.
-  Qed.
+Defined.
 
 Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   (knowledge a (supset phi phi)) u.
@@ -165,7 +204,7 @@ Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   apply kI0.
   intro v.
   apply skk.
-  Qed.
+Defined.
 
 Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   (supset
@@ -185,7 +224,7 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   intro righty.
   apply veeIr.
   exact righty.
-  Qed.
+Defined.
 
 
 Lemma disj_distr:
@@ -205,7 +244,7 @@ Lemma disj_distr:
   intro r.
   right.
   exact r.
-  Qed.
+Defined.
 
 Lemma simplerKvee:
   forall (u: U) (phi psi: o) (a:agent),
@@ -218,7 +257,7 @@ Lemma simplerKvee:
   exact pre.
   apply veeIl.
   apply veeIr.
-  Qed.
+Defined.
 
 (* prove disjunction property. Then we can use the extraction. *)
   
@@ -248,7 +287,7 @@ Lemma Cleft:
   exact one.
   apply wedgeEl with (knowledge bee (knowledge shmem (knowledge bee psi))).
   exact two.
-  Qed.
+Defined.
 
 Lemma C:
   forall (phi psi: o) (u: U) (ei bee:agent),
@@ -277,7 +316,7 @@ Lemma C:
   apply Cleft with phi.
   exact one.
   exact two.
-  Qed.
+Defined.
 
 Lemma Aright:
   forall (phi psi: o) (u: U) (th0 th1: agent),
@@ -305,7 +344,7 @@ Lemma Aright:
   apply deltan.
   apply kE with ei.
   apply gamma.
-  Qed.
+Defined.
 
 Lemma Aone:
   forall (phi psi: o) (u: U) (ei bee: agent),
@@ -333,7 +372,7 @@ Lemma Aone:
   exact two.
   apply kE with bee.
   exact pre.
-  Qed.
+Defined.
 
 Lemma Atwo:
   forall (phi psi: o) (u: U) (ei bee: agent),
@@ -360,7 +399,7 @@ Lemma Atwo:
   exact two.
   apply kE with bee.
   exact pre.
-  Qed.
+Defined.
 
 
 Lemma B:
@@ -407,7 +446,7 @@ Lemma B:
   apply kE with th0.
   apply kE with th1.
   apply gamma.
-  Qed.
+Defined.
 
 Lemma fig2:
   forall (phi psi: o) (u: U),
@@ -444,7 +483,7 @@ apply wedgeEr with (knowledge th0 (knowledge shmem (knowledge th0 phi))).
 exact pre.
 apply wedgeEl with (knowledge th1 (knowledge shmem (knowledge th1 psi))).
 exact pre.
-Qed.
+Defined.
 
 (* extraction of fig2 yields () *)
 
@@ -497,7 +536,7 @@ Lemma comm:
   apply kE with th0.
   apply kE with th1.
   apply gamma.
-  Qed.
+Defined.
 
 Lemma more_comm:
   forall (phi psi: o),
@@ -511,7 +550,7 @@ apply disj_current.
 apply comm.
 exact one.
 exact two.
-Qed.
+Defined.
 
 Lemma motto_comm:
   forall (L M: Set),
@@ -523,16 +562,6 @@ Lemma motto_comm:
   apply more_comm.
 Defined.
 
-
-Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
-
-Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
-Definition look1 (n:owned th1) := kE (embed nat) current th1 n.
-Definition look (n:(owned th0 + owned th1)) :=
-  match n with
-      inl n => look0 n
-    | inr n => look1 n
-  end.
 
 (* just in order to ensure the type of look0, look1 
 Parameter possess0: nat -> owned th0.
@@ -563,7 +592,7 @@ Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   intro v.
   intros one_in two_in.
   exact ((kE (embed nat) v th0 one_in) + (kE (embed nat) v th0 two_in)).
-  Qed.
+Defined.
 
 Lemma add1: owned th1 -> (owned th1) -> (owned th1).
   intros one two.
@@ -573,8 +602,20 @@ Lemma add1: owned th1 -> (owned th1) -> (owned th1).
   intro v.
   intros one_in two_in.
   exact ((kE (embed nat) v th1 one_in) + (kE (embed nat) v th1 two_in)).
-  Qed.
-  
+Defined.
+
+
+(* value exchanging preserves value *)
+Section changed.
+  Variable n0: owned th0.
+  Variable n1: owned th1.
+  Definition ex := motto_comm nat nat n0 n1.
+  Check ex.
+  Lemma lefthand:
+    forall n: owned th0, 
+    (ex = inl (owned th1) n) -> look0 n = look0 n0.
+    intro n.
+
 
 Definition exchanged :=
   (motto_comm nat nat ask_user0 ask_user1).
@@ -598,7 +639,6 @@ Lemma sum_calc:
     look n = (look0 ask_user0) + (look1 ask_user1)).
   exists (add_own exchanged).
   compute -[plus].
-  unfold motto_comm.
 
 Extraction Language Haskell.
 
