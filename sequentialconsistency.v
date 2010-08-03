@@ -516,24 +516,89 @@ Qed.
 Lemma motto_comm:
   forall (L M: Set),
      (knowledge th0 (embed L)) current ->
- (knowledge th1 (embed M)) current ->
+     (knowledge th1 (embed M)) current ->
     ( (knowledge th0 (embed M)) current +
       (knowledge th1 (embed L)) current).
   intros L M.
-apply more_comm.
-Qed.
+  apply more_comm.
+Defined.
 
 
-Definition possessed (a:agent) (orig:Set) :=
-  (knowledge a (embed orig)) current.
+Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
 
+Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
+Definition look1 (n:owned th1) := kE (embed nat) current th1 n.
+Definition look (n:(owned th0 + owned th1)) :=
+  match n with
+      inl n => look0 n
+    | inr n => look1 n
+  end.
 
+(* just in order to ensure the type of look0, look1 
+Parameter possess0: nat -> owned th0.
+Parameter possess1: nat -> owned th1.
+Axiom lp0: forall n:nat, look0 (possess0 n) = n.
+Axiom lp1: forall n:nat, look1 (possess1 n) = n.
+*)
 
-Axiom ask_user0: possessed th0 nat.
-Axiom ask_user1: possessed th1 nat.
+Axiom ask_user0: owned th0.
+Axiom ask_user1: owned th1.
 
-Check (kE (embed ask_user0) current th0).
+Check kI.
+Check kI (embed nat) (embed nat) current th0.
+Check kI (embed nat) (embed nat) current th0 ask_user0.
 
+Section remote_calc.
+  Parameter f: nat->nat.
+  Check kI (embed nat) (embed nat) current th0 ask_user0.
+End remote_calc.
+
+(* make calc0 not parameter, but a defined object *)
+
+Lemma add0: owned th0 -> (owned th0) -> (owned th0).
+  intros one two.
+  apply kI2 with (embed nat) (embed nat).
+  exact one.
+  exact two.
+  intro v.
+  intros one_in two_in.
+  exact ((kE (embed nat) v th0 one_in) + (kE (embed nat) v th0 two_in)).
+  Qed.
+
+Lemma add1: owned th1 -> (owned th1) -> (owned th1).
+  intros one two.
+  apply kI2 with (embed nat) (embed nat).
+  exact one.
+  exact two.
+  intro v.
+  intros one_in two_in.
+  exact ((kE (embed nat) v th1 one_in) + (kE (embed nat) v th1 two_in)).
+  Qed.
+  
+
+Definition exchanged :=
+  (motto_comm nat nat ask_user0 ask_user1).
+
+Definition ex_type :=
+  (sum (knowledge th0 (embed nat) current) (knowledge th1 (embed nat) current)).
+
+Check exchanged: ex_type.
+Check exchanged: owned th0 + owned th1.
+Check inl.
+
+Definition add_own (e:ex_type) : ex_type :=
+  match e with
+    inl e => inl (owned th1) (add0 e ask_user0)
+  | inr e => inr (owned th0) (add1 e ask_user1)
+  end.
+
+Require Import Setoid.
+Lemma sum_calc:
+  (exists n: (owned th0 + owned th1),
+    look n = (look0 ask_user0) + (look1 ask_user1)).
+  exists (add_own exchanged).
+  compute -[plus].
+  unfold motto_comm.
 
 Extraction Language Haskell.
 
