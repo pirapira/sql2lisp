@@ -527,12 +527,11 @@ Qed.
 End sequential_consistency.
 
 Extraction Language Haskell.
-Extraction motto_comm.
-Extraction more_comm.
-Extraction comm.
-Extraction fig2.
-Extraction B.
 
-(* TODO: replace vee, wedge, and supset with native Coq connectives.
-   and make rules for those constants lemmas not axioms. *)
+Extract Constant current => "()".
+Extract Constant kE => "\x->x".
+Extract Constant agent => "Agent".
+Extract Constant knowledge "'data" => "'data".
+
+Recursive Extraction motto_comm.
 
