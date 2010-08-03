@@ -73,12 +73,11 @@ Defined.
 Definition kI1:
   forall (phi:o) (psi: o) (u:U) (a:agent)
     (x: (knowledge a psi) u)
-    (f:
-      forall (v:U),
-        (knowledge a psi) v
-      -> phi v),
+    (f: (forall v:U, all_knowledge v a (psi :: nil) -> phi v)),
     (knowledge a phi) u.
-intros phi psi u a x f.
+intros phi psi u a.
+intro x.
+intro pre.
 apply kI with (psi :: nil).
 split.
 exact x.
@@ -86,14 +85,10 @@ compute.
 exact tt.
 intro v.
 clear u x.
-intro pre.
-apply f.
 apply pre.
 Defined.
 
 Print kI1.
-
-  
 
 Section kEkI.
   Variable u: U.
@@ -101,12 +96,11 @@ Section kEkI.
   Variable psi: list o.
   Variable a: agent.
   Variable x:
-    forall p:o, List.In p psi -> (knowledge a p) u.
+    all_knowledge u a psi.
   Variable f:
     forall (v:U),
-      (forall p:o, List.In p psi ->
-      (knowledge a p) v)
-      -> phi v.
+      (all_knowledge v a psi -> phi v).
+  
 
   Check kI.
   Check kI phi psi.
@@ -143,16 +137,13 @@ intro v.
 exact O.
 Defined.
 
-Definition nileater : forall p : o, List.In p nil -> knowledge th0 p current.
-intro p.
-intro abs.
-absurd (List.In p nil).
-apply in_nil.
-exact abs.
+Definition nileater : all_knowledge current th0 nil.
+compute.
+exact tt.
 Defined.
 
 Definition z : forall v:U,
-  (forall (p:o), List.In p nil -> knowledge th0 p v) ->
+  (all_knowledge v th0 nil) ->
   (embed nat) v.
 intros v f.
 generalize v.
@@ -166,7 +157,7 @@ Lemma backzero:
   Qed.
 
 
-Lemma veeIl: forall phi:o, forall psi:o, forall u:U,
+Definition veeIl: forall phi:o, forall psi:o, forall u:U,
   phi u -> (vee phi psi) u.
 intros phi psi u.
 intro orig.
@@ -174,7 +165,7 @@ left.
 exact orig.
 Defined.
 
-Lemma veeIr: forall phi:o, forall psi:o, forall u:U,
+Definition veeIr: forall phi:o, forall psi:o, forall u:U,
   psi u -> (vee phi psi) u.
 intros phi psi u.
 intro orig.
@@ -182,7 +173,7 @@ right.
 exact orig.
 Defined.
 
-Lemma veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
+Definition veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
   (vee phi psi) u ->
   (phi u -> theta u) ->
   (psi u -> theta u) ->
@@ -194,15 +185,15 @@ exact le.
 exact ri.
 Defined.
 
-Lemma veeEveeIr:
+Definition veeEveeIr:
   forall (phi psi theta:o) (u: U) (x: phi u) (fl: phi u-> theta u) (fr: psi u -> theta u),
     fl x = veeE phi psi theta u (veeIl phi psi u x) fl fr.
   intros phi psi theta u x fl fr.
   compute.
   reflexivity.
-  Qed.
+Defined.
 
-Lemma wedgeI: forall phi:o, forall psi:o, forall u: U,
+Definition wedgeI: forall phi:o, forall psi:o, forall u: U,
   phi u ->
   psi u ->
   (wedge phi psi) u.
@@ -214,7 +205,7 @@ exact one.
 exact two.
 Defined.
 
-Lemma wedgeEl: forall phi:o, forall psi:o, forall u:U,
+Definition wedgeEl: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
   phi u.
 intros phi psi u.
@@ -225,7 +216,7 @@ intro irrelevant.
 exact one.
 Defined.
 
-Lemma wedgeEr: forall phi:o, forall psi:o, forall u:U,
+Definition wedgeEr: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
   psi u.
 intros phi psi u.
@@ -236,14 +227,14 @@ intro two.
 exact two.
 Defined.
 
-Lemma supsetI: forall phi:o, forall psi:o, forall u:U,
+Definition supsetI: forall phi:o, forall psi:o, forall u:U,
   (phi u -> psi u) -> (supset phi psi) u.
 intros phi psi u.
 intro orig.
 exact orig.
 Defined.
 
-Lemma supsetE: forall phi:o, forall psi:o, forall u:U,
+Definition supsetE: forall phi:o, forall psi:o, forall u:U,
   (supset phi psi) u->
   phi u ->
   psi u.
@@ -258,11 +249,7 @@ Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:age
   ((knowledge a psi) u -> theta u) ->
   theta u.
 
-(* We have two options.
-   1. reduce the kI rule into single rule.
-   2. write three Kvee conversion rules
-   Obviously, 1 looks better.
-   *)
+(* todo: write conversion rule here *)
 
 Lemma disj_current: forall (phi psi: o),
   (vee phi psi) current ->
