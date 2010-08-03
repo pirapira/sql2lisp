@@ -92,26 +92,28 @@ Axiom kI: forall phi psi: o, forall u: U, forall a: agent,
   (knowledge a phi) u.
 
 Section kEkI.
-  Variable s:Set.
-  Variable phi: o.
+  Variable u: U.
+  Variable phi psi: o.
   Variable a: agent.
-  Variable x: (knowledge a phi) current.
-  Variable psi: o.
-  Variable f: (knowledge a phi) current -> psi current.
+  Variable x: (knowledge a psi) u.
+  Variable f: forall (v:U), (knowledge a psi) v -> phi v.
   Check kI.
-  Check kI psi phi.
-  Check kI psi phi current a.
-  Check kI psi phi current a x.
-  Lemma pr: forall v:U, (knowledge a phi v) -> psi v.
-    intro v.
-    exact x.
-  Defined.
-  Print pr.
-  Variable a: agent.
-  Axiom kEkI: kE (embed s) current a (kI0 (embed s) current a pr) = x.
-End kEkI0.
+  Check kI phi psi.
+  Check kI phi psi u a.
+  Check kI phi psi u a x f.
+  Check kI phi psi u a x f : knowledge a phi u.
+  (* kEkI route *)
+  Check kE.
+  Check kE phi u a (kI phi psi u a x f) : phi u.
 
+  (* straight route *)
+  Check f u : knowledge a psi u -> phi u.
+  Check f u x : phi u.
 
+  Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
+End kEkI.
+
+Print kEkI.
 
 Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
   (knowledge a psi0) u -> (knowledge a psi1) u ->
@@ -119,6 +121,26 @@ Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
     -> phi v) ->
   (knowledge a phi) u.
 
+Section kEkI2.
+  Variable u: U.
+  Variable phi psi0 psi1: o.
+  Variable a: agent.
+  Variable x0: (knowledge a psi0) u.
+  Variable x1: (knowledge a psi1) u.
+  Variable f: forall (v:U), (knowledge a psi0) v -> (knowledge a psi1) v -> phi v.
+  Check kI2.
+  Check kI2 phi psi0 psi1.
+  Check kI2 phi psi0 psi1 u a x0 x1 f : knowledge a phi u.
+  Check kE phi u a (kI2 phi psi0 psi1 u a x0 x1 f) : phi u.
+
+  (* straight route *)
+  Check f u : knowledge a psi0 u -> knowledge a psi1 u -> phi u.
+  Check f u x0 x1 : phi u.
+
+  Axiom kEkI2: kE phi u a (kI2 phi psi0 psi1 u a x0 x1 f) = f u x0 x1.
+End kEkI2.
+
+Print kEkI2.
 
 Lemma veeIl: forall phi:o, forall psi:o, forall u:U,
   phi u -> (vee phi psi) u.
@@ -147,6 +169,14 @@ case disj.
 exact le.
 exact ri.
 Defined.
+
+Lemma veeEveeIr:
+  forall (phi psi theta:o) (u: U) (x: phi u) (fl: phi u-> theta u) (fr: psi u -> theta u),
+    fl x = veeE phi psi theta u (veeIl phi psi u x) fl fr.
+  intros phi psi theta u x fl fr.
+  compute.
+  reflexivity.
+  Qed.
 
 Lemma wedgeI: forall phi:o, forall psi:o, forall u: U,
   phi u ->
@@ -203,6 +233,12 @@ Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:age
   ((knowledge a phi) u -> theta u) ->
   ((knowledge a psi) u -> theta u) ->
   theta u.
+
+(* We have two options.
+   1. reduce the kI rule into single rule.
+   2. write three Kvee conversion rules
+   Obviously, 1 looks better.
+   *)
 
 Lemma disj_current: forall (phi psi: o),
   (vee phi psi) current ->
