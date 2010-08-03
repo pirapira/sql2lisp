@@ -48,7 +48,7 @@ Axiom kI0: forall phi: o, forall u: U, forall a: agent,
   (knowledge a phi) u.
 
 (* in order to state conversion rules, we shoud not mention embed *)
-Section kEI0.
+Section kEkI0.
   Variable phi: o.
   Variable u: U.
   Variable x: forall v:U, phi v.
@@ -58,10 +58,10 @@ Section kEI0.
   Let depo := (kI0 phi u a x) : (knowledge a phi u).
   Check kE phi u a.
   Let back := (kE phi u a depo).
-  Axiom kEI0: back = x u.
-End kEI0.
+  Axiom kEkI0: back = x u.
+End kEkI0.
 
-Check kEI0.
+Check kEkI0.
   
 Parameter shmem th0 th1: agent.
 
@@ -74,17 +74,14 @@ Definition look (n:(owned th0 + owned th1)) :=
     | inr n => look1 n
   end.
 
-Definition zero0: owned th0.
-  apply kI0.
-  intro v.
-  exact O.
-  Defined.
+Definition formalzero : (forall v:U, (embed nat) v).
+intro v.
+exact O.
+Defined.
 
-Definition back: nat.
-  exact (kE (embed nat) current th0 zero0).
-  Defined.
-
-Lemma backzero: back = O.
+Lemma backzero:
+  kE (embed nat) current th0 (kI0 (embed nat) current th0 formalzero) =
+       formalzero current.
   apply kEkI0.
   Qed.
 
