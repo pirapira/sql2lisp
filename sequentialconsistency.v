@@ -40,23 +40,29 @@ Defined.
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
   (knowledge a phi) u -> phi u.
 
+Check existS.
+
 Axiom kI0: forall phi: o, forall u: U, forall a: agent,
+  (* how to represent infinite intersection? *)
   (forall v: U, phi v) ->
   (knowledge a phi) u.
 
-Section kEkI0.
-  Variable s:Set.
-  Variable x: s.
-  Lemma pr: forall v:U, (embed s) v.
-    intro v.
-    compute.
-    exact x.
-  Defined.
-  Print pr.
-  Variable a: agent.
-  Axiom kEkI0: kE (embed s) current a (kI0 (embed s) current a pr) = x.
-End kEkI0.
+(* in order to state conversion rules, we shoud not mention embed *)
+Section kEI0.
+  Variable phi: o.
+  Variable u: U.
+  Variable x: forall v:U, phi v.
+  Print kI0.
+  Variable a:agent.
+  Check kI0.
+  Let depo := (kI0 phi u a x) : (knowledge a phi u).
+  Check kE phi u a.
+  Let back := (kE phi u a depo).
+  Axiom kEI0: back = x u.
+End kEI0.
 
+Check kEI0.
+  
 Parameter shmem th0 th1: agent.
 
 Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
@@ -87,6 +93,28 @@ Axiom kI: forall phi psi: o, forall u: U, forall a: agent,
   (forall v: U, ((knowledge a psi) v)
     -> phi v) ->
   (knowledge a phi) u.
+
+Section kEkI.
+  Variable s:Set.
+  Variable phi: o.
+  Variable a: agent.
+  Variable x: (knowledge a phi) current.
+  Variable psi: o.
+  Variable f: (knowledge a phi) current -> psi current.
+  Check kI.
+  Check kI psi phi.
+  Check kI psi phi current a.
+  Check kI psi phi current a x.
+  Lemma pr: forall v:U, (knowledge a phi v) -> psi v.
+    intro v.
+    exact x.
+  Defined.
+  Print pr.
+  Variable a: agent.
+  Axiom kEkI: kE (embed s) current a (kI0 (embed s) current a pr) = x.
+End kEkI0.
+
+
 
 Axiom kI2: forall phi psi0 psi1: o, forall u: U, forall a: agent,
   (knowledge a psi0) u -> (knowledge a psi1) u ->
