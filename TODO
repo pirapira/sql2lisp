@@ -1,4 +1,5 @@
-- slash relationの話にしてしまえば，抽出できる．
+- Add other permutative conversions.2010/8/5
+- sequential consistency needs a preservation axiom, too.
 
 
 - 例題かえる
