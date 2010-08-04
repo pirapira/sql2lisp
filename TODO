@@ -1,6 +1,8 @@
 - Add other permutative conversions.2010/8/5
 - sequential consistency needs a preservation axiom, too.
 
+- implementation note.
+-- use a variant of MVar that accepts a value only once.
 
 - 例題かえる
 - (lisp2sql.scm) treat (lambda (x y z) ...) form
