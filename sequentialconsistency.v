@@ -350,10 +350,6 @@ Print kVkIvIl.
 Print kVkIvIr.
 
   
-(* the original data *)
-Varialbe origL: (knowledge a phi u).
-  
-  
 
 Lemma disj_current: forall (phi psi: o),
   (vee phi psi) current ->
@@ -392,7 +388,7 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   intro a.
   apply supsetI.
   intro kor.
-  apply Kvee with phi psi a.
+  apply kV with phi psi a.
   exact kor.
   intro lefty.
   apply veeIl.
@@ -429,7 +425,7 @@ Lemma simplerKvee:
       (knowledge a psi)) u).
   intros u phi psi a.
   intro pre.
-  apply Kvee with phi psi a.
+  apply kV with phi psi a.
   exact pre.
   apply veeIl.
   apply veeIr.
@@ -736,6 +732,9 @@ Lemma motto_comm:
   apply more_comm.
 Defined.
 
+Extraction Language Haskell.
+Recursive Extraction motto_comm.
+
 
 (* just in order to ensure the type of look0, look1 
 Parameter possess0: nat -> owned th0.
@@ -759,6 +758,11 @@ End remote_calc.
 (* make calc0 not parameter, but a defined object *)
 
 Extraction Language Haskell.
+Extract Constant current => "()".
+Extract Constant kE => "\x->x".
+Extract Constant agent => "Agent".
+Extract Constant knowledge "'data" => "'data".
+
 Recursive Extraction motto_comm.
 
 Lemma add0: owned th0 -> (owned th0) -> (owned th0).
@@ -783,19 +787,26 @@ Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   exact (knowledge0 + knowledge1).
 Defined.
 
-  exact ((kE (embed nat) v th0 one_in) + (kE (embed nat) v th0 two_in)).
-Defined.
-
 Lemma add1: owned th1 -> (owned th1) -> (owned th1).
   intros one two.
   apply kI2 with (embed nat) (embed nat).
   exact one.
   exact two.
   intro v.
-  intros one_in two_in.
-  exact ((kE (embed nat) v th1 one_in) + (kE (embed nat) v th1 two_in)).
+  intro within.
+  elim within.
+  clear within.
+  intro knowledge0.
+  intro rest.
+  elim rest.
+  clear rest.
+  intro knowledge1.
+  intro rest.
+  clear rest.
+  apply kE in knowledge0.
+  apply kE in knowledge1.
+  exact (knowledge0 + knowledge1).
 Defined.
-
 
 (* value exchanging preserves value *)
 Section changed.
@@ -807,6 +818,17 @@ Section changed.
     forall n: owned th0, 
     (ex = inl (owned th1) n) -> look0 n = look0 n0.
     intro n.
+    compute [ex motto_comm more_comm disj_current comm veeIl veeIr supsetI supsetE wedgeI kI1 kI2 veeE].
+    compute.
+    
+    intro comp.
+    Check (fig2 (embed nat) (embed nat) current
+      (write0 (embed nat) current n0, write1 (embed nat) current n1)).
+    absurd (fig2 (embed nat) (embed nat) current
+      (write0 (embed nat) current n0, write1 (embed nat) current n1) = inl x).
+    
+    induction comp.
+    rewrite kVkIvIl.
 
 
 Definition exchanged :=
@@ -833,11 +855,6 @@ Lemma sum_calc:
   compute -[plus].
 
 Extraction Language Haskell.
-
-Extract Constant current => "()".
-Extract Constant kE => "\x->x".
-Extract Constant agent => "Agent".
-Extract Constant knowledge "'data" => "'data".
 
 Recursive Extraction motto_comm.
 
