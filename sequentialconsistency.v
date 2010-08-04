@@ -349,6 +349,119 @@ End kVkIveeI.
 Print kVkIvIl.
 Print kVkIvIr.
 
+Section p4.
+  (* Hirai APLAS Permutative conversion 4. *)
+  Variable xtype :o.
+  Variable ytype :o.
+  Variable a: agent.
+  Variable u: U.
+  Variable M: (vee xtype ytype) u.
+  Variable ztype: o.
+  Variable N: xtype u -> (knowledge a ztype u).
+  Variable O: ytype u -> (knowledge a ztype u).
+  Let original: ztype u.
+  apply kE with a.
+  apply veeE with xtype ytype.
+  exact M.
+  apply N.
+  apply O.
+  Defined.
+  Let reduced: ztype u.
+  apply veeE with xtype ytype.
+  exact M.
+  intro x.
+  apply kE with a.
+  apply N.
+  exact x.
+  intro y.
+  apply kE with a.
+  apply O.
+  exact y.
+  Defined.
+  Axiom p4: original = reduced.
+End p4.
+
+Hint Resolve p4.
+
+Section testvee.
+  Variable A B C D: Set.
+  Variable x: A + B.
+  Variable y: A -> C -> D.
+  Variable z: B -> C -> D.
+  Variable w: C.
+  Let righty: D.
+  case x.
+  intro a.
+  apply y.
+  apply a.
+  apply w.
+  intro b.
+  apply z.
+  apply b.
+  apply w.
+  Defined.
+  Let leftyC: C->D.
+  case x.
+  apply y.
+  apply z.
+  Defined.
+  Let lefty: D.
+  apply leftyC.
+  exact w.
+  Defined.
+  Lemma testvee: lefty = righty.
+    compute.
+    case x.
+    reflexivity.
+    reflexivity.
+    Defined.
+  End testvee.
+
+(* todo begin here *)
+  
+Section p5.
+  Variable u: U.
+  Variable xtype ytype utype vtype resulttype: o.
+  Variable M: (vee xtype ytype) u.
+  Variable a: agent.
+  Variable N: xtype u -> (knowledge a (vee utype vtype)) u.
+  Variable O: ytype u -> (knowledge a (vee utype vtype)) u.
+  Variable P: knowledge a utype u -> resulttype u.
+  Variable Q: knowledge a vtype u -> resulttype u.
+  Let orig_inner:
+    (knowledge a (vee utype vtype)) u.
+  apply veeE with xtype ytype.
+  exact M.
+  exact N.
+  exact O.
+  Defined.
+  Let orig: resulttype u.
+  apply kV with utype vtype a.
+  exact orig_inner.
+  clear orig_inner.
+  exact P.
+  exact Q.
+  Defined.
+  Let reduced: resulttype u.
+  apply veeE with xtype ytype.
+  exact M.
+  intro x.
+  apply kV with utype vtype a.
+  apply N.
+  exact x.
+  exact P.
+  exact Q.
+  intro y.
+  apply kV with utype vtype a.
+  apply O.
+  exact y.
+  exact P.
+  exact Q.
+  Defined.
+  Axiom p5: orig = reduced.
+  Hint Resolve p5.
+End p5.
+  
   
 
 Lemma disj_current: forall (phi psi: o),
@@ -361,7 +474,7 @@ Defined.
 
 Lemma skk: forall (u:U) (phi:o),
   (supset phi phi) u.
-  intro u.
+  intro u0.
   intro phi.
   apply supsetI.
   intro one.
@@ -370,7 +483,7 @@ Defined.
 
 Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   (knowledge a (supset phi phi)) u.
-  intro u.
+  intro u0.
   intro phi.
   intro a.
   apply kI0.
@@ -397,6 +510,8 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   apply veeIr.
   exact righty.
 Defined.
+
+
 
 
 Lemma disj_distr:
@@ -435,9 +550,16 @@ Defined.
   
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
-    (vee (supset (knowledge shmem phi) (knowledge shmem psi))
-      (supset (knowledge shmem psi) (knowledge shmem phi))) u.
+    (vee (supset (knowledge xbox phi) (knowledge ybox psi))
+      (supset (knowledge ybox psi) (knowledge xbox phi))) u.
 
+Section seqcon_preserve.
+  Variable u: U.
+  Variable (phi psi: o).
+  Variable x: knowledge xbox phi u.
+  Variable y: knowledge ybox psi u.
+  Let obtained: (knowledge xbox phi u) + (knowledge ybox psi u).
+  
 
 Lemma Cleft:
   forall (phi psi: o) (u: U) (ei bee: agent),
@@ -661,11 +783,55 @@ Axiom write0:
   forall (psi: o) (u: U),
   (knowledge th0 psi) u->
    (knowledge th0 (knowledge shmem (knowledge th0 psi))) u.
+
+Section write0preserve.
+  Variable psi : o.
+  Variable u : U.
+  Variable x: (knowledge th0 psi) u.
+  Let saved : (knowledge th0 (knowledge shmem (knowledge th0 psi))) u.
+  apply write0.
+  exact x.
+  Defined.
+  Let taken: psi u.
+  apply kE with th0.
+  exact x.
+  Defined.
+  Let taken': psi u.
+  apply kE with th0.
+  apply kE with shmem.
+  apply kE with th0.
+  exact saved.
+  Defined.
+  Axiom write0preserve: taken' = taken.
+  Hint Resolve write0preserve.
+End write0preserve.
+
 Axiom write1:
   forall (psi: o) (u: U),
      (knowledge th1 psi) u ->
      (knowledge th1 (knowledge shmem (knowledge th1 psi))) u.
 
+Section write1preserve.
+  Variable psi : o.
+  Variable u : U.
+  Variable x: (knowledge th1 psi) u.
+  Let saved : (knowledge th1 (knowledge shmem (knowledge th1 psi))) u.
+  apply write1.
+  exact x.
+  Defined.
+  Let taken: psi u.
+  apply kE with th1.
+  exact x.
+  Defined.
+  Let taken': psi u.
+  apply kE with th1.
+  apply kE with shmem.
+  apply kE with th1.
+  exact saved.
+  Defined.
+  Axiom write1preserve: taken' = taken.
+  Hint Resolve write1preserve.
+End write1preserve.
 
 Lemma comm:
   forall (phi psi: o) (u:U),
@@ -818,17 +984,14 @@ Section changed.
     forall n: owned th0, 
     (ex = inl (owned th1) n) -> look0 n = look0 n0.
     intro n.
-    compute [ex motto_comm more_comm disj_current comm veeIl veeIr supsetI supsetE wedgeI kI1 kI2 veeE].
+    compute [ex motto_comm more_comm disj_current comm veeE veeIl veeIr supsetE supsetI wedgeEl wedgeEr wedgeI fig2].
+    case (B (embed nat) (embed nat) current).
     compute.
+    intro pre.
     
-    intro comp.
-    Check (fig2 (embed nat) (embed nat) current
-      (write0 (embed nat) current n0, write1 (embed nat) current n1)).
-    absurd (fig2 (embed nat) (embed nat) current
-      (write0 (embed nat) current n0, write1 (embed nat) current n1) = inl x).
+    auto.
+    intro k.
     
-    induction comp.
-    rewrite kVkIvIl.
 
 
 Definition exchanged :=
