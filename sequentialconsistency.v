@@ -137,6 +137,7 @@ Section kEkI.
 
   (* maybe, we want this = into >= in order to represent the monotonicity *)
   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
+  Hint Resolve kEkI.
 End kEkI.
 
 Print kEkI.
@@ -264,13 +265,95 @@ intro orig.
 exact orig.
 Defined.
 
-Axiom Kvee: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
+Axiom kV: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
   (knowledge a (vee phi psi)) u ->
   ((knowledge a phi) u -> theta u) ->
   ((knowledge a psi) u -> theta u) ->
   theta u.
 
-(* todo: write conversion rule here *)
+Section kVkIveeI.
+  Variable phi psi theta:o.
+  Variable u:U.
+  Variable a:agent.
+  Variable chi: list o.
+  Variable kchi: all_knowledge u a chi.
+  Variable kphi: (forall v:U, all_knowledge v a chi -> phi v).
+  Variable kpsi: (forall v:U, all_knowledge v a chi -> psi v).
+  Let kphipsiL: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  intro v.
+  intro source.
+  apply veeIl.
+  apply kphi.
+  apply source.
+  Defined.
+  Let kphipsiR: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  intro v.
+  intro source.
+  apply veeIr.
+  apply kpsi.
+  apply source.
+  Defined.
+  Let origL: (knowledge a (vee phi psi)) u.
+  apply kI with chi.
+  exact kchi.
+  exact kphipsiL.
+  Defined.
+  Let origR: (knowledge a (vee phi psi)) u.
+  apply kI with chi.
+  exact kchi.
+  exact kphipsiR.
+  Defined.
+  Variable phichi:
+    (knowledge a phi) u -> theta u.
+  Variable psichi:
+    (knowledge a psi) u -> theta u.
+
+  (* the original route *)
+  Let pthetaLorig:
+    theta u.
+  apply kV with phi psi a.
+  exact origL.
+  exact phichi.
+  exact psichi.
+  Defined.
+  (* the reduced route *)
+  Let pthetaLred: theta u.
+  apply phichi.
+  apply kI with chi.
+  exact kchi.
+  exact kphi.
+  Defined.
+  Axiom kVkIvIl: pthetaLorig = pthetaLred.
+  Hint Resolve kVkIvIl.
+
+  (* the original route *)
+  Let pthetaRorig:
+    theta u.
+  apply kV with phi psi a.
+  exact origR.
+  exact phichi.
+  exact psichi.
+  Defined.
+  (* the reduced route *)
+  Let pthetaRred: theta u.
+  apply psichi.
+  apply kI with chi.
+  exact kchi.
+  exact kpsi.
+  Defined.
+  Axiom kVkIvIr: pthetaRorig = pthetaRred.
+  Hint Resolve kVkIvIr.
+
+End kVkIveeI.
+
+Print kVkIvIl.
+Print kVkIvIr.
+
+  
+(* the original data *)
+Varialbe origL: (knowledge a phi u).
+  
+  
 
 Lemma disj_current: forall (phi psi: o),
   (vee phi psi) current ->
