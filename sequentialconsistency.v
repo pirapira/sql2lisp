@@ -54,7 +54,7 @@ Axiom kI:
       (all_knowledge v a psi) -> phi v) ->
     (knowledge a phi) u.
 
-(* as a macro, define kI0 *)
+(* useful macros *)
 
 Definition kI0:
   forall (phi:o) (u:U) (a: agent),
@@ -90,6 +90,26 @@ Defined.
 
 Print kI1.
 
+Definition kI2:
+  forall (phi psi0 psi1: o) (u:U) (a:agent)
+    (x: (knowledge a psi0) u)
+    (y: (knowledge a psi1) u)
+    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> phi v)),
+    (knowledge a phi) u.
+intros phi psi0 psi1 u a pre0 pre1.
+intro f.
+apply kI with (psi0 :: psi1 :: nil).
+split.
+exact pre0.
+split.
+exact pre1.
+compute.
+exact tt.
+intro v.
+clear u pre0 pre1.
+apply f.
+Defined.
+
 Section kEkI.
   Variable u: U.
   Variable phi: o.
@@ -115,6 +135,7 @@ Section kEkI.
   Check f u.
   Check f u x : phi u.
 
+  (* maybe, we want this = into >= in order to represent the monotonicity *)
   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
 End kEkI.
 
@@ -383,7 +404,7 @@ Lemma C:
   intro psi0.
   apply kE with shmem.
   apply kE with ei.
-  exact psi0.
+  apply psi0.
   apply Cleft with phi.
   exact one.
   exact two.
@@ -409,10 +430,9 @@ Lemma Aright:
   exact two.
   intro v.
   intro gamma.
-  intro deltan.
   apply supsetE with (knowledge shmem (knowledge ei phi)).
   apply kE with ei.
-  apply deltan.
+  apply gamma.
   apply kE with ei.
   apply gamma.
 Defined.
@@ -655,13 +675,31 @@ End remote_calc.
 
 (* make calc0 not parameter, but a defined object *)
 
+Extraction Language Haskell.
+Recursive Extraction motto_comm.
+
 Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   intros one two.
   apply kI2 with (embed nat) (embed nat).
   exact one.
   exact two.
+  clear one two.
   intro v.
-  intros one_in two_in.
+  intro within.
+  elim within.
+  clear within.
+  intro knowledge0.
+  intro kn.
+  elim kn.
+  clear kn.
+  intro knowledge1.
+  intro rest.
+  clear rest.
+  apply kE in knowledge0.
+  apply kE in knowledge1.
+  exact (knowledge0 + knowledge1).
+Defined.
+
   exact ((kE (embed nat) v th0 one_in) + (kE (embed nat) v th0 two_in)).
 Defined.
 
