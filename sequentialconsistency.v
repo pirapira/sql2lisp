@@ -143,7 +143,7 @@ End kEkI.
 Print kEkI.
 
 
-Parameter shmem th0 th1: agent.
+Parameter xbox ybox th0 th1: agent.
 
 Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
 Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
@@ -461,7 +461,45 @@ Section p5.
   Axiom p5: orig = reduced.
   Hint Resolve p5.
 End p5.
-  
+
+Section p8.
+  Variable u: U.
+  Variable xtype ytype: o.
+  Variable pinput poutput: o.
+  Variable a: agent.
+  Variable M: knowledge a (vee xtype ytype) u.
+  Variable N: (knowledge a xtype u) -> pinput u.
+  Variable O: (knowledge a ytype u) -> pinput u.
+  Variable P: pinput u -> poutput u.
+  Let orig: poutput u.
+  apply P.
+  clear P.
+  apply kV with xtype ytype a.
+  exact M.
+  exact N.
+  exact O.
+  Defined.
+  Let reduced: poutput u.
+  apply kV with xtype ytype a.
+  exact M.
+  intro x.
+  apply P.
+  apply N.
+  exact x.
+  intro y.
+  apply P.
+  apply O.
+  exact y.
+  Defined.
+  Axiom p8: orig = reduced.
+  Hint Resolve p8.
+End p8.
+
+Section p9.
+  (* implement *)
+End p9.
+
+(* implement 10, 11, 12, 13, 15, 16, 17 *)
   
 
 Lemma disj_current: forall (phi psi: o),
@@ -547,38 +585,37 @@ Lemma simplerKvee:
 Defined.
 
 (* prove disjunction property. Then we can use the extraction. *)
-  
+
 Axiom sequential_consistency:
   forall (phi psi: o) (u: U),
     (vee (supset (knowledge xbox phi) (knowledge ybox psi))
       (supset (knowledge ybox psi) (knowledge xbox phi))) u.
 
-Section seqcon_preserve.
-  Variable u: U.
-  Variable (phi psi: o).
-  Variable x: knowledge xbox phi u.
-  Variable y: knowledge ybox psi u.
-  Let obtained: (knowledge xbox phi u) + (knowledge ybox psi u).
+Axiom xbox_once:
+  forall (u:U) (phi:o) (x y:knowledge xbox phi u), x = y.
+  
+Axiom ybox_once:
+  forall (u:U) (phi:o) (x y:knowledge ybox phi u), x = y.
   
 
 Lemma Cleft:
-  forall (phi psi: o) (u: U) (ei bee: agent),
+  forall (phi psi: o) (u: U) (ei bee c d: agent),
     (
       (supset
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi)))) u) ->
+        (knowledge ei (knowledge c (knowledge ei phi)))
+        (knowledge ei (knowledge d (knowledge bee psi)))) u) ->
     (
       (wedge
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge bee (knowledge shmem (knowledge bee psi)))) u) ->
+        (knowledge ei (knowledge c (knowledge ei phi)))
+        (knowledge bee (knowledge d (knowledge bee psi)))) u) ->
     (
-      (knowledge ei (knowledge shmem (knowledge bee psi))) u).
-  intros phi psi u ei bee.
+      (knowledge ei (knowledge d (knowledge bee psi))) u).
+  intros phi psi u ei bee c d.
   intro one.
   intro two.
-  apply supsetE with (knowledge ei (knowledge shmem (knowledge ei phi))).
+  apply supsetE with (knowledge ei (knowledge c (knowledge ei phi))).
   exact one.
-  apply wedgeEl with (knowledge bee (knowledge shmem (knowledge bee psi))).
+  apply wedgeEl with (knowledge bee (knowledge d (knowledge bee psi))).
   exact two.
 Defined.
 
