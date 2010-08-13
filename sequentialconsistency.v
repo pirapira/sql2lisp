@@ -48,7 +48,7 @@ Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  (knowledge a phi) u -> phi u.
+  (knowledge a phi) u -> io (phi u).
 
 Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
   match orig with
@@ -129,7 +129,7 @@ Section kEkI.
     all_knowledge u a psi.
   Variable f:
     forall (v:U),
-      (all_knowledge v a psi -> phi v).
+      (all_knowledge v a psi -> io (phi v)).
   
 
   Check kI.
@@ -139,7 +139,7 @@ Section kEkI.
   Check kI phi psi u a x f : knowledge a phi u.
   (* kEkI route *)
   Check kE.
-  Check kE phi u a (kI phi psi u a x f) : phi u.
+  Check kE phi u a (kI phi psi u a x f) : io (phi u).
 
   (* straight route *)
   Check f u.
