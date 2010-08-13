@@ -5,15 +5,15 @@ Require Import List.
 
 Parameter U : Type.
 Parameter current: U.
-Parameter IO: Set -> Set.
+Parameter io: Set -> Set.
 
-Parameter ret: forall (S:Set), S -> IO S.
-Parameter bind: forall (S T:Set), IO S -> (S -> IO T) -> IO T.
+Parameter ret: forall (S:Set), S -> io S.
+Parameter bind: forall (S T:Set), io S -> (S -> io T) -> io T.
 
 Definition o:= U -> Set.
 
 (* Syntax *)
-Definition embed (S:Set) (_:U) := IO S.
+Definition embed (S:Set) (_:U) := io S.
 
 Parameter knowledge : agent -> o -> o.
 
@@ -995,7 +995,7 @@ End remote_calc.
 
 (* make calc0 not parameter, but a defined object *)
 
-Definition IOplus: IO nat -> IO nat -> IO nat.
+Definition ioplus: io nat -> io nat -> io nat.
 intros x y.
 apply bind with nat.
 exact x.
@@ -1028,7 +1028,7 @@ Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   clear rest.
   apply kE in knowledge0.
   apply kE in knowledge1.
-  exact (IOplus knowledge0 knowledge1).
+  exact (ioplus knowledge0 knowledge1).
 Defined.
 
 Lemma add1: owned th1 -> (owned th1) -> (owned th1).
@@ -1049,7 +1049,7 @@ Lemma add1: owned th1 -> (owned th1) -> (owned th1).
   clear rest.
   apply kE in knowledge0.
   apply kE in knowledge1.
-  exact (IOplus knowledge0 knowledge1).
+  exact (ioplus knowledge0 knowledge1).
 Defined.
 
 (* value exchanging preserves value *)
@@ -1091,7 +1091,7 @@ Definition add_own (e:ex_type) : ex_type :=
 Require Import Setoid.
 Lemma sum_calc:
   (exists n: (owned th0 + owned th1),
-    look n = IOplus (look0 ask_user0) (look1 ask_user1)).
+    look n = ioplus (look0 ask_user0) (look1 ask_user1)).
   exists (add_own exchanged).
   compute [look].
   compute [look0 look1].
