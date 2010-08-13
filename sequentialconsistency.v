@@ -8,41 +8,39 @@ Parameter o : Type.
 Definition U:= o -> Set.
 Parameter current: U.
 
-Parameter ret: forall (u: U) (phi: o), u o -> io S.
-Parameter bind: forall (u: U) (phi psi: o), io S -> (S -> io T) -> io T.
-
-
-
 (* Syntax *)
-Definition embed (S:Set) (_:U) := io S.
+Parameter embed : Set -> o.
+
+Parameter ret: forall (u: U) (S: Set), S -> u (embed S).
+Parameter bind: forall (u: U) (S T: Set),
+  u (embed S) -> (S -> u (embed T)) -> u (embed T).
 
 Parameter knowledge : agent -> o -> o.
+Parameter vee wedge supset: o -> o -> o.
 
-Definition vee (phi:o) (psi:o) (u:U): Set :=
-  (sum (phi u)(psi u)).
-Definition wedge (phi:o) (psi:o) (u:U): Set :=
-  (prod (phi u)(psi u)).
-Definition supset (phi:o) (psi:o) (u:U): Set :=
-  (phi u) -> io (psi u).
-
-Require Import Coq.Sets.Uniset.
-Definition ff (u:U) := Emptyset.
+Section sem.
+  Parameter (phi:o) (psi:o) (u:U).
+  Axiom veeSem: 
+    u (vee phi psi) = (sum (u phi) (u psi)).
+  Axiom wedgeSem: 
+    u (wedge phi psi) = (prod (u phi) (u psi)).
+  Axiom supsetSem: 
+    u (supset phi psi) = ((u phi) -> (u psi)).
+End sem.
 
 (* Model Property *)
 
 
 Lemma mp:
   forall P Q: Set,
-    (P -> Q) -> (forall u: U, (embed P) u -> io ((embed Q) u)).
+    (P -> Q) -> (forall u: U, u (embed P) -> (u (embed Q))).
 intros P Q.
 intro orig.
-intro u.
+intro u0.
 intro x.
-compute.
 apply bind with P.
 exact x.
 intro y.
-apply ret.
 apply ret.
 apply orig.
 exact y.
@@ -50,28 +48,31 @@ Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  (knowledge a phi) u -> io (phi u).
+  u (knowledge a phi) -> u phi.
 
 Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
   match orig with
     | nil => unit
     | cons h tl =>
-      (prod ((knowledge a h) u) (all_knowledge u a tl))
+      (prod (u (knowledge a h)) (all_knowledge u a tl))
   end.
 
 Axiom kI: 
   forall (phi:o) (psi: list o) (u:U) (a:agent),
     (all_knowledge u a psi) ->
     (forall (v: U),
-      (all_knowledge v a psi) -> io (phi v)) ->
-    (knowledge a phi) u.
+      (all_knowledge v a psi) -> (v phi)) ->
+    u (knowledge a phi).
+
+Extraction Language Haskell.
+Extraction kI.
 
 (* useful macros *)
 
 Definition kI0:
   forall (phi:o) (u:U) (a: agent),
-    (forall (v:U), phi v) ->
-    (knowledge a phi) u.
+    (forall (v:U), v phi) ->
+    u (knowledge a phi).
 intros phi u a pre.
 apply kI with nil.
 exact tt.
