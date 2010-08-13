@@ -22,7 +22,7 @@ Definition vee (phi:o) (psi:o) (u:U): Set :=
 Definition wedge (phi:o) (psi:o) (u:U): Set :=
   (prod (phi u)(psi u)).
 Definition supset (phi:o) (psi:o) (u:U): Set :=
-  (phi u) -> (psi u).
+  (phi u) -> io (psi u).
 
 Require Import Coq.Sets.Uniset.
 Definition ff (u:U) := Emptyset.
@@ -61,14 +61,14 @@ Axiom kI:
   forall (phi:o) (psi: list o) (u:U) (a:agent),
     (all_knowledge u a psi) ->
     (forall (v: U),
-      (all_knowledge v a psi) -> phi v) ->
+      (all_knowledge v a psi) -> io (phi v)) ->
     (knowledge a phi) u.
 
 (* useful macros *)
 
 Definition kI0:
   forall (phi:o) (u:U) (a: agent),
-    (forall (v:U), phi v) ->
+    (forall (v:U), io (phi v)) ->
     (knowledge a phi) u.
 intros phi u a pre.
 apply kI with nil.
@@ -83,7 +83,7 @@ Defined.
 Definition kI1:
   forall (phi:o) (psi: o) (u:U) (a:agent)
     (x: (knowledge a psi) u)
-    (f: (forall v:U, all_knowledge v a (psi :: nil) -> phi v)),
+    (f: (forall v:U, all_knowledge v a (psi :: nil) -> io (phi v))),
     (knowledge a phi) u.
 intros phi psi u a.
 intro x.
@@ -104,7 +104,7 @@ Definition kI2:
   forall (phi psi0 psi1: o) (u:U) (a:agent)
     (x: (knowledge a psi0) u)
     (y: (knowledge a psi1) u)
-    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> phi v)),
+    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> io (phi v))),
     (knowledge a phi) u.
 intros phi psi0 psi1 u a pre0 pre1.
 intro f.
@@ -143,7 +143,7 @@ Section kEkI.
 
   (* straight route *)
   Check f u.
-  Check f u x : phi u.
+  Check f u x : io (phi u).
 
   (* maybe, we want this = into >= in order to represent the monotonicity *)
   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
@@ -164,8 +164,9 @@ Definition look (n:(owned th0 + owned th1)) :=
     | inr n => look1 n
   end.
 
-Definition formalzero : (forall v:U, (embed nat) v).
+Definition formalzero : (forall v:U, io ((embed nat) v)).
 intro v.
+apply ret.
 exact (ret nat O).
 Defined.
 
@@ -176,10 +177,9 @@ Defined.
 
 Definition z : forall v:U,
   (all_knowledge v th0 nil) ->
-  (embed nat) v.
+  io ((embed nat) v).
 intros v f.
-generalize v.
-exact formalzero.
+apply formalzero.
 Defined.
 
 Lemma backzero:
@@ -190,48 +190,61 @@ Lemma backzero:
 
 
 Definition veeIl: forall phi:o, forall psi:o, forall u:U,
-  phi u -> (vee phi psi) u.
+  phi u -> io (vee phi psi u).
 intros phi psi u.
 intro orig.
+apply ret.
 left.
 exact orig.
 Defined.
 
 Definition veeIr: forall phi:o, forall psi:o, forall u:U,
-  psi u -> (vee phi psi) u.
+  psi u -> io (vee phi psi u).
 intros phi psi u.
 intro orig.
+apply ret.
 right.
 exact orig.
 Defined.
 
 Definition veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
-  (vee phi psi) u ->
-  (phi u -> theta u) ->
-  (psi u -> theta u) ->
-  theta u.
+  (vee phi psi u) ->
+  (phi u -> io (theta u)) ->
+  (psi u -> io (theta u)) ->
+  io (theta u).
 intros phi psi theta u.
 intros disj le ri.
 case disj.
+intro pu.
+apply bind with (phi u).
+apply ret.
+exact pu.
 exact le.
+intro pu.
+apply bind with (psi u).
+apply ret.
+exact pu.
 exact ri.
 Defined.
 
-Definition veeEveeIr:
-  forall (phi psi theta:o) (u: U) (x: phi u) (fl: phi u-> theta u) (fr: psi u -> theta u),
-    fl x = veeE phi psi theta u (veeIl phi psi u x) fl fr.
-  intros phi psi theta u x fl fr.
-  compute.
-  reflexivity.
-Defined.
+(* Fix: use bind in the veeE ... term *)
+(* Definition veeEveeIr: *)
+(*   forall (phi psi theta:o) (u: U) (x: phi u) *)
+(*     (fl: phi u-> io (theta u)) (fr: psi u -> io (theta u)), *)
+(*     fl x = veeE phi psi theta u (veeIl phi psi u x) fl fr. *)
+(*   intros phi psi theta u x fl fr. *)
+(*   compute. *)
+(*   reflexivity. *)
+(* Defined. *)
 
 Definition wedgeI: forall phi:o, forall psi:o, forall u: U,
   phi u ->
   psi u ->
-  (wedge phi psi) u.
+  io (wedge phi psi u).
 intros phi psi u.
 intro one.
 intro two.
+apply ret.
 split.
 exact one.
 exact two.
@@ -239,37 +252,43 @@ Defined.
 
 Definition wedgeEl: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
-  phi u.
+  io (phi u).
 intros phi psi u.
 intro orig.
 elim orig.
 intro one.
 intro irrelevant.
+apply ret.
 exact one.
 Defined.
 
 Definition wedgeEr: forall phi:o, forall psi:o, forall u:U,
   (wedge phi psi) u ->
-  psi u.
+  io (psi u).
 intros phi psi u.
 intro orig.
 elim orig.
 intro irrelevant.
 intro two.
+apply ret.
 exact two.
 Defined.
 
 Definition supsetI: forall phi:o, forall psi:o, forall u:U,
-  (phi u -> psi u) -> (supset phi psi) u.
+  (phi u -> psi u) -> (supset phi psi u).
 intros phi psi u.
 intro orig.
-exact orig.
+compute.
+intro pu.
+apply ret.
+apply orig.
+apply pu.
 Defined.
 
 Definition supsetE: forall phi:o, forall psi:o, forall u:U,
   (supset phi psi) u->
   phi u ->
-  psi u.
+  io (psi u).
 intros phi psi u.
 intro orig.
 exact orig.
@@ -277,9 +296,9 @@ Defined.
 
 Axiom kV: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
   (knowledge a (vee phi psi)) u ->
-  ((knowledge a phi) u -> theta u) ->
-  ((knowledge a psi) u -> theta u) ->
-  theta u.
+  ((knowledge a phi) u -> io (theta u)) ->
+  ((knowledge a psi) u -> io (theta u)) ->
+  io (theta u).
 
 Section kVkIveeI.
   Variable phi psi theta:o.
@@ -287,18 +306,19 @@ Section kVkIveeI.
   Variable a:agent.
   Variable chi: list o.
   Variable kchi: all_knowledge u a chi.
-  Variable kphi: (forall v:U, all_knowledge v a chi -> phi v).
-  Variable kpsi: (forall v:U, all_knowledge v a chi -> psi v).
-  Let kphipsiL: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  Variable kphi: (forall v:U, all_knowledge v a chi -> io (phi v)).
+  Variable kpsi: (forall v:U, all_knowledge v a chi -> io (psi v)).
+  Let kphipsiL: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
   apply veeIl.
   apply kphi.
   apply source.
   Defined.
-  Let kphipsiR: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  Let kphipsiR: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
+  apply ret.
   apply veeIr.
   apply kpsi.
   apply source.
