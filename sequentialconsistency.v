@@ -5,11 +5,15 @@ Require Import List.
 
 Parameter U : Type.
 Parameter current: U.
+Parameter IO: Set -> Set.
+
+Parameter ret: forall (S:Set), S -> IO S.
+Parameter bind: forall (S T:Set), IO S -> (S -> IO T) -> IO T.
 
 Definition o:= U -> Set.
 
 (* Syntax *)
-Definition embed (S:Set) (_:U) := S.
+Definition embed (S:Set) (_:U) := IO S.
 
 Parameter knowledge : agent -> o -> o.
 
@@ -33,7 +37,13 @@ intros P Q.
 intro orig.
 intro u.
 intro x.
-exact (orig x).
+compute.
+apply bind with P.
+exact x.
+intro y.
+apply ret.
+apply orig.
+exact y.
 Defined.
 
 (* Proof Rules *)
@@ -156,7 +166,7 @@ Definition look (n:(owned th0 + owned th1)) :=
 
 Definition formalzero : (forall v:U, (embed nat) v).
 intro v.
-exact O.
+exact (ret nat O).
 Defined.
 
 Definition nileater : all_knowledge current th0 nil.
@@ -985,6 +995,20 @@ End remote_calc.
 
 (* make calc0 not parameter, but a defined object *)
 
+Definition IOplus: IO nat -> IO nat -> IO nat.
+intros x y.
+apply bind with nat.
+exact x.
+clear x.
+intro x.
+apply bind with nat.
+exact y.
+clear y.
+intro y.
+apply ret.
+exact (x + y).
+Defined.
+
 Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   intros one two.
   apply kI2 with (embed nat) (embed nat).
@@ -1004,7 +1028,7 @@ Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   clear rest.
   apply kE in knowledge0.
   apply kE in knowledge1.
-  exact (knowledge0 + knowledge1).
+  exact (IOplus knowledge0 knowledge1).
 Defined.
 
 Lemma add1: owned th1 -> (owned th1) -> (owned th1).
@@ -1025,7 +1049,7 @@ Lemma add1: owned th1 -> (owned th1) -> (owned th1).
   clear rest.
   apply kE in knowledge0.
   apply kE in knowledge1.
-  exact (knowledge0 + knowledge1).
+  exact (IOplus knowledge0 knowledge1).
 Defined.
 
 (* value exchanging preserves value *)
@@ -1067,7 +1091,7 @@ Definition add_own (e:ex_type) : ex_type :=
 Require Import Setoid.
 Lemma sum_calc:
   (exists n: (owned th0 + owned th1),
-    look n = (look0 ask_user0) + (look1 ask_user1)).
+    look n = IOplus (look0 ask_user0) (look1 ask_user1)).
   exists (add_own exchanged).
   compute [look].
   compute [look0 look1].
