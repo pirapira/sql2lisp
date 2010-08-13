@@ -4,17 +4,17 @@ Parameter agent : Set.
 Require Import List.
 
 Parameter o : Type.
+Parameter l : Type.
+Parameter io : l -> Set.
 
-Definition U:= o -> Set.
+Definition U:= o -> l.
 Parameter current: U.
 
-Parameter ret: forall (u: U) (phi: o), u o -> io S.
-Parameter bind: forall (u: U) (phi psi: o), io S -> (S -> io T) -> io T.
-
-
-
 (* Syntax *)
-Definition embed (S:Set) (_:U) := io S.
+Parameter embed : Set -> o.
+
+Parameter ret: forall (S: Set) (u: U) (phi: o), io (u (embed S)) -> S.
+Parameter bind: forall (u: U) (phi psi: o), io S -> (S -> io T) -> io T.
 
 Parameter knowledge : agent -> o -> o.
 
