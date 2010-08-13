@@ -963,9 +963,6 @@ Lemma motto_comm:
   apply more_comm.
 Defined.
 
-Extraction Language Haskell.
-Recursive Extraction motto_comm.
-
 
 (* just in order to ensure the type of look0, look1 
 Parameter possess0: nat -> owned th0.
@@ -987,14 +984,6 @@ Section remote_calc.
 End remote_calc.
 
 (* make calc0 not parameter, but a defined object *)
-
-Extraction Language Haskell.
-Extract Constant current => "()".
-Extract Constant kE => "\x->x".
-Extract Constant agent => "Agent".
-Extract Constant knowledge "'data" => "'data".
-
-Recursive Extraction motto_comm.
 
 Lemma add0: owned th0 -> (owned th0) -> (owned th0).
   intros one two.
@@ -1088,8 +1077,7 @@ Lemma sum_calc:
   compute [disj_current].
   compute [comm].
   compute -[plus].
+Abort All.
 
-Extraction Language Haskell.
-
-Recursive Extraction motto_comm.
+End changed.
 

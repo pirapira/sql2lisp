@@ -27,3 +27,11 @@
 /test.v
 /test.v~
 /question.txt
+/Makefile~
+/extraction.glob
+/extraction.v.d
+/extraction.vo
+/extraction.v~
+/sequentialconsistency.glob
+/sequentialconsistency.v.d
+/sequentialconsistency.vo
