@@ -593,10 +593,11 @@ Axiom sequential_consistency:
 
 Axiom xbox_once:
   forall (u:U) (phi:o) (x y:knowledge xbox phi u), x = y.
+Hint Resolve xbox_once.
   
 Axiom ybox_once:
   forall (u:U) (phi:o) (x y:knowledge ybox phi u), x = y.
-  
+Hint Resolve ybox_once.  
 
 Lemma Cleft:
   forall (phi psi: o) (u: U) (ei bee c d: agent),
@@ -620,55 +621,82 @@ Lemma Cleft:
 Defined.
 
 Lemma C:
-  forall (phi psi: o) (u: U) (ei bee:agent),
+  forall (phi psi: o) (u: U) (ei bee c d:agent),
     (
       (supset
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi)))) u) ->
+        (knowledge ei (knowledge c (knowledge ei phi)))
+        (knowledge ei (knowledge d (knowledge bee psi)))) u) ->
     (
       (wedge
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge bee (knowledge shmem (knowledge bee psi)))) u) ->
+        (knowledge ei (knowledge c (knowledge ei phi)))
+        (knowledge bee (knowledge d (knowledge bee psi)))) u) ->
     (
       (knowledge ei (knowledge bee psi)) u).
-  intros phi psi u ei bee.
+  intros phi psi u ei bee c d.
   intros one two.
-  apply supsetE with (knowledge ei (knowledge shmem (knowledge bee psi))).
+  apply supsetE with (knowledge ei (knowledge d (knowledge bee psi))).
   apply supsetI.
   intro zero.
-  apply kI1 with (knowledge shmem (knowledge bee psi)).
+  apply kI1 with (knowledge d (knowledge bee psi)).
   exact zero.
   intro v.
   intro psi0.
-  apply kE with shmem.
+  apply kE with d.
   apply kE with ei.
   apply psi0.
-  apply Cleft with phi.
+  apply Cleft with phi c.
   exact one.
   exact two.
 Defined.
 
 Lemma Aright:
   forall (phi psi: o) (u: U) (th0 th1: agent),
-    ((knowledge th0 (knowledge shmem (knowledge th0 phi))) u) ->
+    ((knowledge th0 (knowledge xbox (knowledge th0 phi))) u) ->
     (
       (supset
         (knowledge th0 (supset
-          (knowledge shmem (knowledge th0 phi))
-          (knowledge shmem (knowledge th1 psi))))
-        (knowledge th0 (knowledge shmem (knowledge th1 psi)))) u).
+          (knowledge xbox (knowledge th0 phi))
+          (knowledge ybox (knowledge th1 psi))))
+        (knowledge th0 (knowledge ybox (knowledge th1 psi)))) u).
   intros phi psi u ei bee.
   intro hidari.
   apply supsetI.
   intro two.
-  apply kI2 with (knowledge shmem (knowledge ei phi))
-    (supset (knowledge shmem (knowledge ei phi))
-                (knowledge shmem (knowledge bee psi))).
+  apply kI2 with (knowledge xbox (knowledge ei phi))
+    (supset (knowledge xbox (knowledge ei phi))
+                (knowledge ybox (knowledge bee psi))).
   exact hidari.
   exact two.
   intro v.
   intro gamma.
-  apply supsetE with (knowledge shmem (knowledge ei phi)).
+  apply supsetE with (knowledge xbox (knowledge ei phi)).
+  apply kE with ei.
+  apply gamma.
+  apply kE with ei.
+  apply gamma.
+Defined.
+
+Lemma Aright2:
+  forall (phi psi: o) (u: U) (th0 th1: agent),
+    ((knowledge th0 (knowledge ybox (knowledge th0 phi))) u) ->
+    (
+      (supset
+        (knowledge th0 (supset
+          (knowledge ybox (knowledge th0 phi))
+          (knowledge xbox (knowledge th1 psi))))
+        (knowledge th0 (knowledge xbox (knowledge th1 psi)))) u).
+  intros phi psi u ei bee.
+  intro hidari.
+  apply supsetI.
+  intro two.
+  apply kI2 with (knowledge ybox (knowledge ei phi))
+    (supset (knowledge ybox (knowledge ei phi))
+                (knowledge xbox (knowledge bee psi))).
+  exact hidari.
+  exact two.
+  intro v.
+  intro gamma.
+  apply supsetE with (knowledge ybox (knowledge ei phi)).
   apply kE with ei.
   apply gamma.
   apply kE with ei.
@@ -679,15 +707,15 @@ Lemma Aone:
   forall (phi psi: o) (u: U) (ei bee: agent),
     (
       (knowledge bee (knowledge ei (supset
-        (knowledge shmem (knowledge ei phi))
-        (knowledge shmem (knowledge bee psi))))) u) ->
+        (knowledge xbox (knowledge ei phi))
+        (knowledge ybox (knowledge bee psi))))) u) ->
     ((vee
       (supset
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi))))
+        (knowledge ei (knowledge xbox (knowledge ei phi)))
+        (knowledge ei (knowledge ybox (knowledge bee psi))))
       (supset
-        (knowledge bee (knowledge shmem (knowledge bee psi)))
-        (knowledge bee (knowledge shmem (knowledge ei phi))))) u).
+        (knowledge bee (knowledge ybox (knowledge bee psi)))
+        (knowledge bee (knowledge xbox (knowledge ei phi))))) u).
   intros phi psi u ei bee.
   intro pre.
   apply veeIl.
@@ -695,8 +723,8 @@ Lemma Aone:
   intro two.
   apply supsetE with
     (knowledge ei (supset
-      (knowledge shmem (knowledge ei phi))
-      (knowledge shmem (knowledge bee psi)))).
+      (knowledge xbox (knowledge ei phi))
+      (knowledge ybox (knowledge bee psi)))).
   apply Aright.
   exact two.
   apply kE with bee.
@@ -707,23 +735,23 @@ Lemma Atwo:
   forall (phi psi: o) (u: U) (ei bee: agent),
     (
       (knowledge bee (knowledge ei (supset
-        (knowledge shmem (knowledge ei phi))
-        (knowledge shmem (knowledge bee psi))))) u) ->
+        (knowledge xbox (knowledge ei phi))
+        (knowledge ybox (knowledge bee psi))))) u) ->
     ((vee
       (supset
-        (knowledge ei (knowledge shmem (knowledge ei phi)))
-        (knowledge ei (knowledge shmem (knowledge bee psi))))
+        (knowledge ei (knowledge xbox (knowledge ei phi)))
+        (knowledge ei (knowledge ybox (knowledge bee psi))))
       (supset
-        (knowledge bee (knowledge shmem (knowledge bee psi)))
-        (knowledge bee (knowledge shmem (knowledge ei phi))))) u).
+        (knowledge bee (knowledge ybox (knowledge bee psi)))
+        (knowledge bee (knowledge xbox (knowledge ei phi))))) u).
   intros phi psi u ei bee.
   intro pre.
   apply veeIl.
   apply supsetI.
   intro two.
   apply supsetE with (knowledge ei
-    (supset (knowledge shmem (knowledge ei phi))
-      (knowledge shmem (knowledge bee psi)))).
+    (supset (knowledge xbox (knowledge ei phi))
+      (knowledge ybox (knowledge bee psi)))).
   apply Aright.
   exact two.
   apply kE with bee.
@@ -736,19 +764,19 @@ Lemma B:
     (
       (vee
         (supset
-          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-          (knowledge th0 (knowledge shmem (knowledge th1 psi))))
+          (knowledge th0 (knowledge xbox (knowledge th0 phi)))
+          (knowledge th0 (knowledge ybox (knowledge th1 psi))))
         (supset
-          (knowledge th1 (knowledge shmem (knowledge th1 psi)))
-          (knowledge th1 (knowledge shmem (knowledge th0 phi))))) u).
+          (knowledge th1 (knowledge ybox (knowledge th1 psi)))
+          (knowledge th1 (knowledge xbox (knowledge th0 phi))))) u).
   intros phi psi u.
   apply veeE with 
     (knowledge th1 (knowledge th0 (supset
-        (knowledge shmem (knowledge th0 phi))
-        (knowledge shmem (knowledge th1 psi)))))
+        (knowledge xbox (knowledge th0 phi))
+        (knowledge ybox (knowledge th1 psi)))))
     (knowledge th1 (knowledge th0 (supset
-        (knowledge shmem (knowledge th1 psi))
-        (knowledge shmem (knowledge th0 phi))))).
+        (knowledge ybox (knowledge th1 psi))
+        (knowledge xbox (knowledge th0 phi))))).
   apply simplerKvee.
   apply kI0.
   intro v.
@@ -762,13 +790,13 @@ Lemma B:
   apply supsetI.
   intro two.
   apply supsetE with (knowledge th1 (supset
-    (knowledge shmem (knowledge th1 psi))
-    (knowledge shmem (knowledge th0 phi)))).
-  apply Aright.
+    (knowledge ybox (knowledge th1 psi))
+    (knowledge xbox (knowledge th0 phi)))).
+  apply Aright2.
   exact two.
   apply kI1 with (knowledge th0
-                (supset (knowledge shmem (knowledge th1 psi))
-                   (knowledge shmem (knowledge th0 phi)))).
+                (supset (knowledge ybox (knowledge th1 psi))
+                   (knowledge xbox (knowledge th0 phi)))).
   exact pre.
   intro v.
   intro gamma.
@@ -782,8 +810,8 @@ Lemma fig2:
     (
       (supset
         (wedge
-          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-          (knowledge th1 (knowledge shmem (knowledge th1 psi))))
+          (knowledge th0 (knowledge xbox (knowledge th0 phi)))
+          (knowledge th1 (knowledge ybox (knowledge th1 psi))))
         (vee
           (knowledge th0 (knowledge th1 psi))
           (knowledge th1 (knowledge th0 phi)))) u).
@@ -792,25 +820,25 @@ Lemma fig2:
   intro pre.
 apply veeE with 
   (supset
-    (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-    (knowledge th0 (knowledge shmem (knowledge th1 psi))))
+    (knowledge th0 (knowledge xbox (knowledge th0 phi)))
+    (knowledge th0 (knowledge ybox (knowledge th1 psi))))
   (supset
-    (knowledge th1 (knowledge shmem (knowledge th1 psi)))
-    (knowledge th1 (knowledge shmem (knowledge th0 phi)))).
+    (knowledge th1 (knowledge ybox (knowledge th1 psi)))
+    (knowledge th1 (knowledge xbox (knowledge th0 phi)))).
 apply B.
 intro two.
 apply veeIl.
-apply C with phi.
+apply C with phi xbox ybox.
 exact two.
 exact pre.
 intro two.
 apply veeIr.
-apply C with psi.
+apply C with psi ybox xbox.
 exact two.
 apply wedgeI.
-apply wedgeEr with (knowledge th0 (knowledge shmem (knowledge th0 phi))).
+apply wedgeEr with (knowledge th0 (knowledge xbox (knowledge th0 phi))).
 exact pre.
-apply wedgeEl with (knowledge th1 (knowledge shmem (knowledge th1 psi))).
+apply wedgeEl with (knowledge th1 (knowledge ybox (knowledge th1 psi))).
 exact pre.
 Defined.
 
@@ -819,13 +847,13 @@ Defined.
 Axiom write0:
   forall (psi: o) (u: U),
   (knowledge th0 psi) u->
-   (knowledge th0 (knowledge shmem (knowledge th0 psi))) u.
+   (knowledge th0 (knowledge xbox (knowledge th0 psi))) u.
 
 Section write0preserve.
   Variable psi : o.
   Variable u : U.
   Variable x: (knowledge th0 psi) u.
-  Let saved : (knowledge th0 (knowledge shmem (knowledge th0 psi))) u.
+  Let saved : (knowledge th0 (knowledge xbox (knowledge th0 psi))) u.
   apply write0.
   exact x.
   Defined.
@@ -835,7 +863,7 @@ Section write0preserve.
   Defined.
   Let taken': psi u.
   apply kE with th0.
-  apply kE with shmem.
+  apply kE with xbox.
   apply kE with th0.
   exact saved.
   Defined.
@@ -846,13 +874,13 @@ End write0preserve.
 Axiom write1:
   forall (psi: o) (u: U),
      (knowledge th1 psi) u ->
-     (knowledge th1 (knowledge shmem (knowledge th1 psi))) u.
+     (knowledge th1 (knowledge ybox (knowledge th1 psi))) u.
 
 Section write1preserve.
   Variable psi : o.
   Variable u : U.
   Variable x: (knowledge th1 psi) u.
-  Let saved : (knowledge th1 (knowledge shmem (knowledge th1 psi))) u.
+  Let saved : (knowledge th1 (knowledge ybox (knowledge th1 psi))) u.
   apply write1.
   exact x.
   Defined.
@@ -862,7 +890,7 @@ Section write1preserve.
   Defined.
   Let taken': psi u.
   apply kE with th1.
-  apply kE with shmem.
+  apply kE with ybox.
   apply kE with th1.
   exact saved.
   Defined.
@@ -883,8 +911,8 @@ Lemma comm:
   apply veeE with (knowledge th0 (knowledge th1 psi)) (knowledge th1 (knowledge th0 phi)).
   apply supsetE with
         (wedge
-          (knowledge th0 (knowledge shmem (knowledge th0 phi)))
-          (knowledge th1 (knowledge shmem (knowledge th1 psi)))).
+          (knowledge th0 (knowledge xbox (knowledge th0 phi)))
+          (knowledge th1 (knowledge ybox (knowledge th1 psi)))).
   apply fig2.
   apply wedgeI.
   apply write0.
@@ -1052,6 +1080,13 @@ Lemma sum_calc:
   (exists n: (owned th0 + owned th1),
     look n = (look0 ask_user0) + (look1 ask_user1)).
   exists (add_own exchanged).
+  compute [look].
+  compute [look0 look1].
+  compute [add_own exchanged].
+  compute [motto_comm].
+  compute [more_comm].
+  compute [disj_current].
+  compute [comm].
   compute -[plus].
 
 Extraction Language Haskell.
