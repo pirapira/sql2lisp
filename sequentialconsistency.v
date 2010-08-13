@@ -12,15 +12,22 @@ Parameter bind: forall (S T:Set), io S -> (S -> io T) -> io T.
 
 Definition o:= U -> Set.
 
+
 (* Syntax *)
-Definition embed (S:Set) (_:U) := io S.
+Definition embed (S:Set) (_:U) := S.
 
 Parameter knowledge : agent -> o -> o.
 
-Definition vee (phi:o) (psi:o) (u:U): Set :=
-  (sum (phi u)(psi u)).
+Definition vee: o-> o-> U-> Set.
+intro a.
+intro b.
+intro u.
+apply io.
+exact (sum (a u) (b u)).
+Defined.
+
 Definition wedge (phi:o) (psi:o) (u:U): Set :=
-  (prod (phi u)(psi u)).
+  (io (prod (phi u)(psi u))).
 Definition supset (phi:o) (psi:o) (u:U): Set :=
   (phi u) -> io (psi u).
 
@@ -32,13 +39,14 @@ Definition ff (u:U) := Emptyset.
 
 Lemma mp:
   forall P Q: Set,
-    (P -> Q) -> (forall u: U, (embed P) u -> (embed Q) u).
+    (P -> Q) -> (forall u: U, (embed P) u -> io ((embed Q) u)).
 intros P Q.
 intro orig.
 intro u.
 intro x.
 compute.
 apply bind with P.
+apply ret.
 exact x.
 intro y.
 apply ret.
@@ -48,13 +56,13 @@ Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  (knowledge a phi) u -> io (phi u).
+  io ((knowledge a phi) u) -> io (phi u).
 
 Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
   match orig with
     | nil => unit
     | cons h tl =>
-      (prod ((knowledge a h) u) (all_knowledge u a tl))
+      (prod (io ((knowledge a h) u)) (all_knowledge u a tl))
   end.
 
 Axiom kI: 
@@ -62,14 +70,14 @@ Axiom kI:
     (all_knowledge u a psi) ->
     (forall (v: U),
       (all_knowledge v a psi) -> io (phi v)) ->
-    (knowledge a phi) u.
+    io ((knowledge a phi) u).
 
 (* useful macros *)
 
 Definition kI0:
   forall (phi:o) (u:U) (a: agent),
     (forall (v:U), io (phi v)) ->
-    (knowledge a phi) u.
+    io ((knowledge a phi) u).
 intros phi u a pre.
 apply kI with nil.
 exact tt.
@@ -84,12 +92,13 @@ Definition kI1:
   forall (phi:o) (psi: o) (u:U) (a:agent)
     (x: (knowledge a psi) u)
     (f: (forall v:U, all_knowledge v a (psi :: nil) -> io (phi v))),
-    (knowledge a phi) u.
+    io ((knowledge a phi) u).
 intros phi psi u a.
 intro x.
 intro pre.
 apply kI with (psi :: nil).
 split.
+apply ret.
 exact x.
 compute.
 exact tt.
@@ -105,57 +114,60 @@ Definition kI2:
     (x: (knowledge a psi0) u)
     (y: (knowledge a psi1) u)
     (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> io (phi v))),
-    (knowledge a phi) u.
+    io ((knowledge a phi) u).
 intros phi psi0 psi1 u a pre0 pre1.
 intro f.
 apply kI with (psi0 :: psi1 :: nil).
 split.
+apply ret.
 exact pre0.
 split.
+apply ret.
 exact pre1.
-compute.
 exact tt.
 intro v.
 clear u pre0 pre1.
 apply f.
 Defined.
 
-Section kEkI.
-  Variable u: U.
-  Variable phi: o.
-  Variable psi: list o.
-  Variable a: agent.
-  Variable x:
-    all_knowledge u a psi.
-  Variable f:
-    forall (v:U),
-      (all_knowledge v a psi -> io (phi v)).
+
+(* some term must be created with bind. *)
+(* Section kEkI. *)
+(*   Variable u: U. *)
+(*   Variable phi: o. *)
+(*   Variable psi: list o. *)
+(*   Variable a: agent. *)
+(*   Variable x: *)
+(*     all_knowledge u a psi. *)
+(*   Variable f: *)
+(*     forall (v:U), *)
+(*       (all_knowledge v a psi -> io (phi v)). *)
   
 
-  Check kI.
-  Check kI phi psi.
-  Check kI phi psi u a.
-  Check kI phi psi u a x f.
-  Check kI phi psi u a x f : knowledge a phi u.
-  (* kEkI route *)
-  Check kE.
-  Check kE phi u a (kI phi psi u a x f) : io (phi u).
+(*   Check kI. *)
+(*   Check kI phi psi. *)
+(*   Check kI phi psi u a. *)
+(*   Check kI phi psi u a x f. *)
+(*   Check kI phi psi u a x f : io (knowledge a phi u). *)
+(*   (* kEkI route *) *)
+(*   Check kE. *)
+(*   Check kE phi u a (kI phi psi u a x f) : io (phi u). *)
 
-  (* straight route *)
-  Check f u.
-  Check f u x : io (phi u).
+(*   (* straight route *) *)
+(*   Check f u. *)
+(*   Check f u x : io (phi u). *)
 
-  (* maybe, we want this = into >= in order to represent the monotonicity *)
-  Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
-  Hint Resolve kEkI.
-End kEkI.
+(*   (* maybe, we want this = into >= in order to represent the monotonicity *) *)
+(*   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x. *)
+(*   Hint Resolve kEkI. *)
+(* End kEkI. *)
 
-Print kEkI.
+(* Print kEkI. *)
 
 
 Parameter xbox ybox th0 th1: agent.
 
-Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
+Definition owned (a:agent) := io (knowledge (a:agent) (embed nat) current).
 Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
 Definition look1 (n:owned th1) := kE (embed nat) current th1 n.
 Definition look (n:(owned th0 + owned th1)) :=
@@ -167,7 +179,7 @@ Definition look (n:(owned th0 + owned th1)) :=
 Definition formalzero : (forall v:U, io ((embed nat) v)).
 intro v.
 apply ret.
-exact (ret nat O).
+exact O.
 Defined.
 
 Definition nileater : all_knowledge current th0 nil.
@@ -182,18 +194,21 @@ intros v f.
 apply formalzero.
 Defined.
 
-Lemma backzero:
-  kE (embed nat) current th0 (kI (embed nat) nil current th0 nileater z) =
-       formalzero current.
-  apply kEkI.
-  Qed.
+(* the statement has to be written with bind *)
+(* Lemma backzero: *)
+(*   kE (embed nat) current th0 (kI (embed nat) nil current th0 nileater z) = *)
+(*        formalzero current. *)
+(*   apply kEkI. *)
+(*   Qed. *)
 
 
 Definition veeIl: forall phi:o, forall psi:o, forall u:U,
-  phi u -> io (vee phi psi u).
+  phi u -> (vee phi psi u).
 intros phi psi u.
 intro orig.
-apply ret.
+apply ret in orig.
+generalize orig.
+apply bind.
 left.
 exact orig.
 Defined.
@@ -275,27 +290,30 @@ exact two.
 Defined.
 
 Definition supsetI: forall phi:o, forall psi:o, forall u:U,
-  (phi u -> psi u) -> (supset phi psi u).
+  ((phi u) -> io (psi u)) -> (supset phi psi u).
 intros phi psi u.
 intro orig.
-compute.
-intro pu.
-apply ret.
-apply orig.
-apply pu.
+intro two.
+generalize orig.
+apply bind.
+exact two.
 Defined.
 
 Definition supsetE: forall phi:o, forall psi:o, forall u:U,
-  (supset phi psi) u->
-  phi u ->
-  io (psi u).
+  io ((supset phi psi) u)->
+  io (phi u) -> io (psi u).
 intros phi psi u.
+compute.
 intro orig.
+intro second.
+generalize orig.
+generalize second.
+apply bind.
 exact orig.
 Defined.
 
 Axiom kV: forall phi:o, forall psi:o, forall theta:o, forall u:U, forall a:agent,
-  (knowledge a (vee phi psi)) u ->
+  io ((knowledge a (vee phi psi)) u) ->
   ((knowledge a phi) u -> io (theta u)) ->
   ((knowledge a psi) u -> io (theta u)) ->
   io (theta u).
@@ -324,12 +342,12 @@ Section kVkIveeI.
   apply source.
   apply veeIr.
   Defined.
-  Let origL: (knowledge a (vee phi psi)) u.
+  Let origL: io ((knowledge a (vee phi psi)) u).
   apply kI with chi.
   exact kchi.
   exact kphipsiL.
   Defined.
-  Let origR: (knowledge a (vee phi psi)) u.
+  Let origR: io ((knowledge a (vee phi psi)) u).
   apply kI with chi.
   exact kchi.
   exact kphipsiR.
@@ -349,10 +367,11 @@ Section kVkIveeI.
   Defined.
   (* the reduced route *)
   Let pthetaLred: io (theta u).
-  apply phichi.
+  apply bind with (knowledge a phi u).
   apply kI with chi.
   exact kchi.
   exact kphi.
+  apply phichi.
   Defined.
   Axiom kVkIvIl: pthetaLorig = pthetaLred.
   Hint Resolve kVkIvIl.
@@ -367,10 +386,11 @@ Section kVkIveeI.
   Defined.
   (* the reduced route *)
   Let pthetaRred: io (theta u).
-  apply psichi.
+  apply bind with (knowledge a psi u).
   apply kI with chi.
   exact kchi.
   exact kpsi.
+  apply psichi.
   Defined.
   Axiom kVkIvIr: pthetaRorig = pthetaRred.
   Hint Resolve kVkIvIr.
@@ -388,8 +408,8 @@ Section p4.
   Variable u: U.
   Variable M: (vee xtype ytype) u.
   Variable ztype: o.
-  Variable N: xtype u -> (knowledge a ztype u).
-  Variable O: ytype u -> (knowledge a ztype u).
+  Variable N: xtype u -> io (knowledge a ztype u).
+  Variable O: ytype u -> io (knowledge a ztype u).
   Let original: io (ztype u).
   apply kE with a.
   case M.
@@ -439,7 +459,7 @@ Section testvee.
   exact w.
   Defined.
   Lemma testvee: lefty = righty.
-    compute.
+    compute. (* remember this shape. this can be solved by case tactic *)
     case x.
     reflexivity.
     reflexivity.
@@ -465,6 +485,7 @@ Section p5.
   Defined.
   Let orig: io (resulttype u).
   apply kV with utype vtype a.
+  apply ret.
   exact orig_inner.
   clear orig_inner.
   exact P.
@@ -475,12 +496,14 @@ Section p5.
   exact M.
   intro x.
   apply kV with utype vtype a.
+  apply ret.
   apply N.
   exact x.
   exact P.
   exact Q.
   intro y.
   apply kV with utype vtype a.
+  apply ret.
   apply O.
   exact y.
   exact P.
@@ -502,6 +525,7 @@ Section p8.
   Let orig: io (poutput u).
   apply bind with (pinput u).
   apply kV with xtype ytype a.
+  apply ret.
   exact M.
   exact N.
   exact O.
@@ -509,6 +533,7 @@ Section p8.
   Defined.
   Let reduced: io (poutput u).
   apply kV with xtype ytype a.
+  apply ret.
   exact M.
   intro x.
   apply bind with (pinput u).
@@ -548,21 +573,19 @@ Lemma skk: forall (u:U) (phi:o),
   (supset phi phi) u.
   intro u0.
   intro phi.
-  apply supsetI.
-  intro one.
-  exact one.
+  compute.
+  auto.
 Defined.
 
 Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
-  (knowledge a (supset phi phi)) u.
+  io ((knowledge a (supset phi phi)) u).
   intro u0.
   intro phi.
   intro a.
   apply kI0.
   intro v.
-  apply skk.
-  compute.
   apply ret.
+  apply skk.
 Defined.
 
 Lemma kv: forall (u:U) (phi psi:o) (a:agent),
@@ -573,7 +596,6 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   intro phi.
   intro psi.
   intro a.
-  compute.
   intro kor.
   apply kV with phi psi a.
   exact kor.
@@ -591,18 +613,22 @@ Defined.
 Lemma disj_distr:
   forall L M:Set,
     (forall (u:U),
-      ((vee (embed L) (embed M) u) ->
-        ((embed (L+M)) u))).
+      ((vee (embed L) (embed M) u)) ->
+        (io (embed (L+M) u))).
   intros L M u.
   intro sem.
   apply veeE with (embed L) (embed M).
   exact sem.
   apply mp.
   intro l.
+  compute.
+  apply ret.
   left.
   exact l.
   apply mp.
   intro r.
+  compute.
+  apply ret.
   right.
   exact r.
 Defined.
@@ -610,11 +636,12 @@ Defined.
 Lemma simplerKvee:
   forall (u: U) (phi psi: o) (a:agent),
     ((knowledge a (vee phi psi)) u) ->
-    ((vee (knowledge a phi)
+    io ((vee (knowledge a phi)
       (knowledge a psi)) u).
   intros u phi psi a.
   intro pre.
   apply kV with phi psi a.
+  apply ret.
   exact pre.
   apply veeIl.
   apply veeIr.
@@ -646,7 +673,7 @@ Lemma Cleft:
         (knowledge ei (knowledge c (knowledge ei phi)))
         (knowledge bee (knowledge d (knowledge bee psi)))) u) ->
     (
-      (knowledge ei (knowledge d (knowledge bee psi))) u).
+      io ((knowledge ei (knowledge d (knowledge bee psi))) u)).
   intros phi psi u ei bee c d.
   intro one.
   intro two.
@@ -666,8 +693,8 @@ Lemma C:
       (wedge
         (knowledge ei (knowledge c (knowledge ei phi)))
         (knowledge bee (knowledge d (knowledge bee psi)))) u) ->
-    (
-      (knowledge ei (knowledge bee psi)) u).
+    (io
+      ((knowledge ei (knowledge bee psi)) u)).
   intros phi psi u ei bee c d.
   intros one two.
   apply supsetE with (knowledge ei (knowledge d (knowledge bee psi))).
@@ -706,6 +733,7 @@ Lemma Aright:
   intro v.
   intro gamma.
   apply supsetE with (knowledge xbox (knowledge ei phi)).
+  apply gamma.
   apply kE with ei.
   apply gamma.
   apply kE with ei.
