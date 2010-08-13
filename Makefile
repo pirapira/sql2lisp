@@ -95,7 +95,8 @@ GHTMLFILES:=$(VFILES:.v=.g.html)
 
 all: $(VOFILES) extracted.hs
 extracted.hs: $(VOFILES)
-	coqc extraction.v > extracted.hs
+	cat header.hs > extracted.hs
+	coqc extraction.v >> extracted.hs
 spec: $(VIFILES)
 
 gallina: $(GFILES)
