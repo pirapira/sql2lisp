@@ -4,16 +4,20 @@ Parameter agent : Set.
 Require Import List.
 
 Parameter o : Type.
+Parameter l : Type.
 
-Definition U:= o -> Set.
+Definition U:= o -> l.
+Parameter io: l -> Set.
 Parameter current: U.
+
+
 
 (* Syntax *)
 Parameter embed : Set -> o.
 
-Parameter ret: forall (u: U) (S: Set), S -> u (embed S).
+Parameter ret: forall (u: U) (S: Set), S -> io (u (embed S)).
 Parameter bind: forall (u: U) (S T: Set),
-  u (embed S) -> (S -> u (embed T)) -> u (embed T).
+  io (u (embed S)) -> (S -> io (u (embed T))) -> io (u (embed T)).
 
 Parameter knowledge : agent -> o -> o.
 Parameter vee wedge supset: o -> o -> o.
