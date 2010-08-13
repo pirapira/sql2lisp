@@ -311,17 +311,18 @@ Section kVkIveeI.
   Let kphipsiL: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
-  apply veeIl.
+  apply bind with (phi v).
   apply kphi.
   apply source.
+  apply veeIl.
   Defined.
   Let kphipsiR: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
-  apply ret.
-  apply veeIr.
+  apply bind with (psi v).
   apply kpsi.
   apply source.
+  apply veeIr.
   Defined.
   Let origL: (knowledge a (vee phi psi)) u.
   apply kI with chi.
@@ -334,20 +335,20 @@ Section kVkIveeI.
   exact kphipsiR.
   Defined.
   Variable phichi:
-    (knowledge a phi) u -> theta u.
+    (knowledge a phi) u -> io (theta u).
   Variable psichi:
-    (knowledge a psi) u -> theta u.
+    (knowledge a psi) u -> io (theta u).
 
   (* the original route *)
   Let pthetaLorig:
-    theta u.
+    io (theta u).
   apply kV with phi psi a.
   exact origL.
   exact phichi.
   exact psichi.
   Defined.
   (* the reduced route *)
-  Let pthetaLred: theta u.
+  Let pthetaLred: io (theta u).
   apply phichi.
   apply kI with chi.
   exact kchi.
@@ -358,14 +359,14 @@ Section kVkIveeI.
 
   (* the original route *)
   Let pthetaRorig:
-    theta u.
+    io (theta u).
   apply kV with phi psi a.
   exact origR.
   exact phichi.
   exact psichi.
   Defined.
   (* the reduced route *)
-  Let pthetaRred: theta u.
+  Let pthetaRred: io (theta u).
   apply psichi.
   apply kI with chi.
   exact kchi.
@@ -389,16 +390,14 @@ Section p4.
   Variable ztype: o.
   Variable N: xtype u -> (knowledge a ztype u).
   Variable O: ytype u -> (knowledge a ztype u).
-  Let original: ztype u.
+  Let original: io (ztype u).
   apply kE with a.
-  apply veeE with xtype ytype.
-  exact M.
+  case M.
   apply N.
   apply O.
   Defined.
-  Let reduced: ztype u.
-  apply veeE with xtype ytype.
-  exact M.
+  Let reduced: io (ztype u).
+  case M.
   intro x.
   apply kE with a.
   apply N.
@@ -456,23 +455,22 @@ Section p5.
   Variable a: agent.
   Variable N: xtype u -> (knowledge a (vee utype vtype)) u.
   Variable O: ytype u -> (knowledge a (vee utype vtype)) u.
-  Variable P: knowledge a utype u -> resulttype u.
-  Variable Q: knowledge a vtype u -> resulttype u.
+  Variable P: knowledge a utype u -> io (resulttype u).
+  Variable Q: knowledge a vtype u -> io (resulttype u).
   Let orig_inner:
     (knowledge a (vee utype vtype)) u.
-  apply veeE with xtype ytype.
-  exact M.
+  case M.
   exact N.
   exact O.
   Defined.
-  Let orig: resulttype u.
+  Let orig: io (resulttype u).
   apply kV with utype vtype a.
   exact orig_inner.
   clear orig_inner.
   exact P.
   exact Q.
   Defined.
-  Let reduced: resulttype u.
+  Let reduced: io (resulttype u).
   apply veeE with xtype ytype.
   exact M.
   intro x.
@@ -498,27 +496,33 @@ Section p8.
   Variable pinput poutput: o.
   Variable a: agent.
   Variable M: knowledge a (vee xtype ytype) u.
-  Variable N: (knowledge a xtype u) -> pinput u.
-  Variable O: (knowledge a ytype u) -> pinput u.
-  Variable P: pinput u -> poutput u.
-  Let orig: poutput u.
-  apply P.
-  clear P.
+  Variable N: (knowledge a xtype u) -> io (pinput u).
+  Variable O: (knowledge a ytype u) -> io (pinput u).
+  Variable P: pinput u -> io (poutput u).
+  Let orig: io (poutput u).
+  apply bind with (pinput u).
   apply kV with xtype ytype a.
   exact M.
   exact N.
   exact O.
+  apply P.
   Defined.
-  Let reduced: poutput u.
+  Let reduced: io (poutput u).
   apply kV with xtype ytype a.
   exact M.
   intro x.
-  apply P.
+  apply bind with (pinput u).
   apply N.
   exact x.
   intro y.
   apply P.
+  exact y.
+  intro x.
+  apply bind with (pinput u).
   apply O.
+  exact x.
+  intro y.
+  apply P.
   exact y.
   Defined.
   Axiom p8: orig = reduced.
@@ -557,6 +561,8 @@ Lemma knows_skk:  forall (u:U) (phi:o) (a:agent),
   apply kI0.
   intro v.
   apply skk.
+  compute.
+  apply ret.
 Defined.
 
 Lemma kv: forall (u:U) (phi psi:o) (a:agent),
@@ -567,7 +573,7 @@ Lemma kv: forall (u:U) (phi psi:o) (a:agent),
   intro phi.
   intro psi.
   intro a.
-  apply supsetI.
+  compute.
   intro kor.
   apply kV with phi psi a.
   exact kor.
