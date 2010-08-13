@@ -3,27 +3,71 @@ Parameter agent : Set.
 
 Require Import List.
 
-Parameter o : Type.
-
-Definition U:= o -> Set.
+Parameter U: Type.
 Parameter current: U.
+Parameter IOSet: Type.
 
-Parameter ret: forall (u: U) (phi: o), u o -> io S.
-Parameter bind: forall (u: U) (phi psi: o), io S -> (S -> io T) -> io T.
+Definition o := U -> IOSet.
+Parameter io: Set -> IOSet.
+Parameter oi: IOSet -> Set.
+Axiom iooi: forall ios: IOSet, io (oi (ios)) = ios.
+Axiom iosum:
+  forall a b: IOSet,
+    exists c: IOSet,
+      oi c = sum (oi a) (oi b).
+Axiom ioprod:
+  forall a b: IOSet,
+    exists c: IOSet,
+      oi c = prod (oi a) (oi b).
+Axiom iosupset:
+  forall a b: IOSet,
+    exists c: IOSet,
+      (oi c) = ((oi a) -> (oi b)).
+    
 
+Definition oiio: Set -> Set.
+intros s.
+apply oi.
+apply io.
+exact s.
+Defined.
 
+Definition embed (S:Set) (_:U) := (io S).
+
+Parameter ret: forall (u: U) (S: Set), S -> oi (io S).
+Parameter bind: forall (u: U) (S T: Set), oi (io S) -> (S -> oi (io T)) -> oi (io T).
 
 (* Syntax *)
-Definition embed (S:Set) (_:U) := io S.
-
 Parameter knowledge : agent -> o -> o.
 
-Definition vee (phi:o) (psi:o) (u:U): Set :=
-  (sum (phi u)(psi u)).
-Definition wedge (phi:o) (psi:o) (u:U): Set :=
-  (prod (phi u)(psi u)).
-Definition supset (phi:o) (psi:o) (u:U): Set :=
-  (phi u) -> io (psi u).
+Definition iosumf: IOSet -> IOSet -> IOSet.
+intros a b.
+assert (exists c: IOSet, oi c = (sum (oi a) (oi b))).
+apply iosum.
+elim H.
+
+Definition ioprod: IOSet -> IOSet -> IOSet.
+intros a b.
+apply io.
+exact (prod (oi a) (oi b)).
+Defined.
+
+Definition vee (phi:o) (psi:o) (u:U): IOSet :=
+  (iosum (phi u)(psi u)).
+
+Print vee.
+Print iosum.
+Definition wedge (phi:o) (psi:o) (u:U): IOSet :=
+  (ioprod (phi u)(psi u)).
+
+Definition iosup: IOSet -> IOSet -> IOSet.
+intros a b.
+apply io.
+exact ((oi a) -> (oi b)).
+Defined.
+
+Definition supset (phi:o) (psi:o) (u:U): IOSet :=
+  iosup (phi u) (psi u).
 
 Require Import Coq.Sets.Uniset.
 Definition ff (u:U) := Emptyset.
@@ -33,45 +77,46 @@ Definition ff (u:U) := Emptyset.
 
 Lemma mp:
   forall P Q: Set,
-    (P -> Q) -> (forall u: U, (embed P) u -> io ((embed Q) u)).
+    (P -> Q) -> (forall u: U, oi ((embed P) u) -> oi ((embed Q) u)).
 intros P Q.
 intro orig.
 intro u.
 intro x.
 compute.
 apply bind with P.
+exact u.
 exact x.
-intro y.
+intro p.
 apply ret.
-apply ret.
+exact u.
 apply orig.
-exact y.
+exact p.
 Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  (knowledge a phi) u -> io (phi u).
+  oi ((knowledge a phi) u) -> oi (phi u).
 
 Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
   match orig with
     | nil => unit
     | cons h tl =>
-      (prod ((knowledge a h) u) (all_knowledge u a tl))
+      (prod (oi (knowledge a h u)) (all_knowledge u a tl))
   end.
 
 Axiom kI: 
   forall (phi:o) (psi: list o) (u:U) (a:agent),
     (all_knowledge u a psi) ->
     (forall (v: U),
-      (all_knowledge v a psi) -> io (phi v)) ->
-    (knowledge a phi) u.
+      (all_knowledge v a psi) -> oi (phi v)) ->
+    oi ((knowledge a phi) u).
 
 (* useful macros *)
 
 Definition kI0:
   forall (phi:o) (u:U) (a: agent),
-    (forall (v:U), phi v) ->
-    (knowledge a phi) u.
+    (forall (v:U), oi (phi v)) ->
+    oi ((knowledge a phi) u).
 intros phi u a pre.
 apply kI with nil.
 exact tt.
@@ -79,15 +124,14 @@ clear u.
 intro v.
 intro unneeded.
 clear unneeded a.
-apply ret.
 apply pre.
 Defined.
 
 Definition kI1:
   forall (phi:o) (psi: o) (u:U) (a:agent)
-    (x: (knowledge a psi) u)
-    (f: (forall v:U, all_knowledge v a (psi :: nil) -> io (phi v))),
-    (knowledge a phi) u.
+    (x: oi (knowledge a psi u))
+    (f: (forall v:U, all_knowledge v a (psi :: nil) -> oi (phi v))),
+    oi (knowledge a phi u).
 intros phi psi u a.
 intro x.
 intro pre.
@@ -105,10 +149,10 @@ Print kI1.
 
 Definition kI2:
   forall (phi psi0 psi1: o) (u:U) (a:agent)
-    (x: (knowledge a psi0) u)
-    (y: (knowledge a psi1) u)
-    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> io (phi v))),
-    (knowledge a phi) u.
+    (x: oi (knowledge a psi0 u))
+    (y: oi (knowledge a psi1 u))
+    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> oi (phi v))),
+    oi (knowledge a phi u).
 intros phi psi0 psi1 u a pre0 pre1.
 intro f.
 apply kI with (psi0 :: psi1 :: nil).
@@ -132,21 +176,21 @@ Section kEkI.
     all_knowledge u a psi.
   Variable f:
     forall (v:U),
-      (all_knowledge v a psi -> io (phi v)).
+      (all_knowledge v a psi -> oi (phi v)).
   
 
   Check kI.
   Check kI phi psi.
   Check kI phi psi u a.
   Check kI phi psi u a x f.
-  Check kI phi psi u a x f : knowledge a phi u.
+  Check kI phi psi u a x f : oi (knowledge a phi u).
   (* kEkI route *)
   Check kE.
-  Check kE phi u a (kI phi psi u a x f) : io (phi u).
+  Check kE phi u a (kI phi psi u a x f) : oi (phi u).
 
   (* straight route *)
   Check f u.
-  Check f u x : io (phi u).
+  Check f u x : oi (phi u).
 
   (* maybe, we want this = into >= in order to represent the monotonicity *)
   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
@@ -158,7 +202,7 @@ Print kEkI.
 
 Parameter xbox ybox th0 th1: agent.
 
-Definition owned (a:agent) := knowledge (a:agent) (embed nat) current.
+Definition owned (a:agent) := oi (knowledge (a:agent) (embed nat) current).
 Definition look0 (n:owned th0) := kE (embed nat) current th0 n.
 Definition look1 (n:owned th1) := kE (embed nat) current th1 n.
 Definition look (n:(owned th0 + owned th1)) :=
@@ -167,10 +211,10 @@ Definition look (n:(owned th0 + owned th1)) :=
     | inr n => look1 n
   end.
 
-Definition formalzero : (forall v:U, io ((embed nat) v)).
+Definition formalzero : (forall v:U, oi ((embed nat) v)).
 intro v.
 apply ret.
-apply ret.
+exact v.
 exact 0.
 Defined.
 
@@ -181,7 +225,7 @@ Defined.
 
 Definition z : forall v:U,
   (all_knowledge v th0 nil) ->
-  io ((embed nat) v).
+  oi ((embed nat) v).
 intros v f.
 generalize v.
 intro v0.
@@ -196,27 +240,33 @@ Lemma backzero:
 
 
 Definition veeIl: forall phi:o, forall psi:o, forall u:U,
-  phi u -> (vee phi psi) u.
+  oi (phi u) -> oi ((vee phi psi) u).
 intros phi psi u.
 intro orig.
+compute.
+apply ret.
+exact u.
 left.
 exact orig.
 Defined.
 
 Definition veeIr: forall phi:o, forall psi:o, forall u:U,
-  psi u -> (vee phi psi) u.
+  oi (psi u) -> oi ((vee phi psi) u).
 intros phi psi u.
 intro orig.
+apply ret.
+exact u.
 right.
 exact orig.
 Defined.
 
 Definition veeE: forall phi:o, forall psi:o, forall theta:o, forall u: U,
-  (vee phi psi) u ->
-  (phi u -> theta u) ->
-  (psi u -> theta u) ->
-  theta u.
+  oi ((vee phi psi) u) ->
+  (oi (phi u) -> oi (theta u)) ->
+  (oi (psi u) -> oi (theta u)) ->
+  oi (theta u).
 intros phi psi theta u.
+compute.
 intros disj le ri.
 case disj.
 exact le.
