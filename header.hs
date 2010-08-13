@@ -6,3 +6,5 @@ module Main where
 import qualified Prelude
 
 import NVar
+import Head
+

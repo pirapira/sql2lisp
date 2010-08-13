@@ -3,14 +3,15 @@ Parameter agent : Set.
 
 Require Import List.
 
-Parameter U : Type.
+Parameter o : Type.
+
+Definition U:= o -> Set.
 Parameter current: U.
-Parameter io: Set -> Set.
 
-Parameter ret: forall (S:Set), S -> io S.
-Parameter bind: forall (S T:Set), io S -> (S -> io T) -> io T.
+Parameter ret: forall (u: U) (phi: o), u o -> io S.
+Parameter bind: forall (u: U) (phi psi: o), io S -> (S -> io T) -> io T.
 
-Definition o:= U -> Set.
+
 
 (* Syntax *)
 Definition embed (S:Set) (_:U) := io S.
@@ -22,7 +23,7 @@ Definition vee (phi:o) (psi:o) (u:U): Set :=
 Definition wedge (phi:o) (psi:o) (u:U): Set :=
   (prod (phi u)(psi u)).
 Definition supset (phi:o) (psi:o) (u:U): Set :=
-  (phi u) -> (psi u).
+  (phi u) -> io (psi u).
 
 Require Import Coq.Sets.Uniset.
 Definition ff (u:U) := Emptyset.
@@ -32,7 +33,7 @@ Definition ff (u:U) := Emptyset.
 
 Lemma mp:
   forall P Q: Set,
-    (P -> Q) -> (forall u: U, (embed P) u -> (embed Q) u).
+    (P -> Q) -> (forall u: U, (embed P) u -> io ((embed Q) u)).
 intros P Q.
 intro orig.
 intro u.
@@ -42,13 +43,14 @@ apply bind with P.
 exact x.
 intro y.
 apply ret.
+apply ret.
 apply orig.
 exact y.
 Defined.
 
 (* Proof Rules *)
 Axiom kE: forall phi: o, forall u: U, forall a: agent,
-  (knowledge a phi) u -> phi u.
+  (knowledge a phi) u -> io (phi u).
 
 Fixpoint all_knowledge (u:U) (a: agent) (orig:list o) :=
   match orig with
@@ -61,7 +63,7 @@ Axiom kI:
   forall (phi:o) (psi: list o) (u:U) (a:agent),
     (all_knowledge u a psi) ->
     (forall (v: U),
-      (all_knowledge v a psi) -> phi v) ->
+      (all_knowledge v a psi) -> io (phi v)) ->
     (knowledge a phi) u.
 
 (* useful macros *)
@@ -77,13 +79,14 @@ clear u.
 intro v.
 intro unneeded.
 clear unneeded a.
+apply ret.
 apply pre.
 Defined.
 
 Definition kI1:
   forall (phi:o) (psi: o) (u:U) (a:agent)
     (x: (knowledge a psi) u)
-    (f: (forall v:U, all_knowledge v a (psi :: nil) -> phi v)),
+    (f: (forall v:U, all_knowledge v a (psi :: nil) -> io (phi v))),
     (knowledge a phi) u.
 intros phi psi u a.
 intro x.
@@ -104,7 +107,7 @@ Definition kI2:
   forall (phi psi0 psi1: o) (u:U) (a:agent)
     (x: (knowledge a psi0) u)
     (y: (knowledge a psi1) u)
-    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> phi v)),
+    (f: (forall v:U, all_knowledge v a (psi0 :: psi1 :: nil) -> io (phi v))),
     (knowledge a phi) u.
 intros phi psi0 psi1 u a pre0 pre1.
 intro f.
@@ -129,7 +132,7 @@ Section kEkI.
     all_knowledge u a psi.
   Variable f:
     forall (v:U),
-      (all_knowledge v a psi -> phi v).
+      (all_knowledge v a psi -> io (phi v)).
   
 
   Check kI.
@@ -139,11 +142,11 @@ Section kEkI.
   Check kI phi psi u a x f : knowledge a phi u.
   (* kEkI route *)
   Check kE.
-  Check kE phi u a (kI phi psi u a x f) : phi u.
+  Check kE phi u a (kI phi psi u a x f) : io (phi u).
 
   (* straight route *)
   Check f u.
-  Check f u x : phi u.
+  Check f u x : io (phi u).
 
   (* maybe, we want this = into >= in order to represent the monotonicity *)
   Axiom kEkI: kE phi u a (kI phi psi u a x f) = f u x.
@@ -164,9 +167,11 @@ Definition look (n:(owned th0 + owned th1)) :=
     | inr n => look1 n
   end.
 
-Definition formalzero : (forall v:U, (embed nat) v).
+Definition formalzero : (forall v:U, io ((embed nat) v)).
 intro v.
-exact (ret nat O).
+apply ret.
+apply ret.
+exact 0.
 Defined.
 
 Definition nileater : all_knowledge current th0 nil.
@@ -176,10 +181,11 @@ Defined.
 
 Definition z : forall v:U,
   (all_knowledge v th0 nil) ->
-  (embed nat) v.
+  io ((embed nat) v).
 intros v f.
 generalize v.
-exact formalzero.
+intro v0.
+apply formalzero.
 Defined.
 
 Lemma backzero:
@@ -263,13 +269,17 @@ Definition supsetI: forall phi:o, forall psi:o, forall u:U,
   (phi u -> psi u) -> (supset phi psi) u.
 intros phi psi u.
 intro orig.
-exact orig.
+compute.
+intro x.
+apply ret.
+apply orig.
+exact x.
 Defined.
 
 Definition supsetE: forall phi:o, forall psi:o, forall u:U,
   (supset phi psi) u->
   phi u ->
-  psi u.
+  io (psi u).
 intros phi psi u.
 intro orig.
 exact orig.
@@ -287,21 +297,29 @@ Section kVkIveeI.
   Variable a:agent.
   Variable chi: list o.
   Variable kchi: all_knowledge u a chi.
-  Variable kphi: (forall v:U, all_knowledge v a chi -> phi v).
-  Variable kpsi: (forall v:U, all_knowledge v a chi -> psi v).
-  Let kphipsiL: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  Variable kphi: (forall v:U, all_knowledge v a chi -> io (phi v)).
+  Variable kpsi: (forall v:U, all_knowledge v a chi -> io (psi v)).
+  Let kphipsiL: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
-  apply veeIl.
+  apply bind with (phi v).
   apply kphi.
   apply source.
+  intro vv.
+  apply ret.
+  apply veeIl.
+  exact vv.
   Defined.
-  Let kphipsiR: (forall v:U, all_knowledge v a chi -> (vee phi psi) v).
+  Let kphipsiR: (forall v:U, all_knowledge v a chi -> io ((vee phi psi) v)).
   intro v.
   intro source.
-  apply veeIr.
+  apply bind with (psi v).
   apply kpsi.
   apply source.
+  intro vv.
+  apply ret.
+  apply veeIr.
+  exact vv.
   Defined.
   Let origL: (knowledge a (vee phi psi)) u.
   apply kI with chi.
@@ -358,156 +376,6 @@ End kVkIveeI.
 
 Print kVkIvIl.
 Print kVkIvIr.
-
-Section p4.
-  (* Hirai APLAS Permutative conversion 4. *)
-  Variable xtype :o.
-  Variable ytype :o.
-  Variable a: agent.
-  Variable u: U.
-  Variable M: (vee xtype ytype) u.
-  Variable ztype: o.
-  Variable N: xtype u -> (knowledge a ztype u).
-  Variable O: ytype u -> (knowledge a ztype u).
-  Let original: ztype u.
-  apply kE with a.
-  apply veeE with xtype ytype.
-  exact M.
-  apply N.
-  apply O.
-  Defined.
-  Let reduced: ztype u.
-  apply veeE with xtype ytype.
-  exact M.
-  intro x.
-  apply kE with a.
-  apply N.
-  exact x.
-  intro y.
-  apply kE with a.
-  apply O.
-  exact y.
-  Defined.
-  Axiom p4: original = reduced.
-End p4.
-
-Hint Resolve p4.
-
-Section testvee.
-  Variable A B C D: Set.
-  Variable x: A + B.
-  Variable y: A -> C -> D.
-  Variable z: B -> C -> D.
-  Variable w: C.
-  Let righty: D.
-  case x.
-  intro a.
-  apply y.
-  apply a.
-  apply w.
-  intro b.
-  apply z.
-  apply b.
-  apply w.
-  Defined.
-  Let leftyC: C->D.
-  case x.
-  apply y.
-  apply z.
-  Defined.
-  Let lefty: D.
-  apply leftyC.
-  exact w.
-  Defined.
-  Lemma testvee: lefty = righty.
-    compute.
-    case x.
-    reflexivity.
-    reflexivity.
-    Defined.
-  End testvee.
-
-(* todo begin here *)
-  
-Section p5.
-  Variable u: U.
-  Variable xtype ytype utype vtype resulttype: o.
-  Variable M: (vee xtype ytype) u.
-  Variable a: agent.
-  Variable N: xtype u -> (knowledge a (vee utype vtype)) u.
-  Variable O: ytype u -> (knowledge a (vee utype vtype)) u.
-  Variable P: knowledge a utype u -> resulttype u.
-  Variable Q: knowledge a vtype u -> resulttype u.
-  Let orig_inner:
-    (knowledge a (vee utype vtype)) u.
-  apply veeE with xtype ytype.
-  exact M.
-  exact N.
-  exact O.
-  Defined.
-  Let orig: resulttype u.
-  apply kV with utype vtype a.
-  exact orig_inner.
-  clear orig_inner.
-  exact P.
-  exact Q.
-  Defined.
-  Let reduced: resulttype u.
-  apply veeE with xtype ytype.
-  exact M.
-  intro x.
-  apply kV with utype vtype a.
-  apply N.
-  exact x.
-  exact P.
-  exact Q.
-  intro y.
-  apply kV with utype vtype a.
-  apply O.
-  exact y.
-  exact P.
-  exact Q.
-  Defined.
-  Axiom p5: orig = reduced.
-  Hint Resolve p5.
-End p5.
-
-Section p8.
-  Variable u: U.
-  Variable xtype ytype: o.
-  Variable pinput poutput: o.
-  Variable a: agent.
-  Variable M: knowledge a (vee xtype ytype) u.
-  Variable N: (knowledge a xtype u) -> pinput u.
-  Variable O: (knowledge a ytype u) -> pinput u.
-  Variable P: pinput u -> poutput u.
-  Let orig: poutput u.
-  apply P.
-  clear P.
-  apply kV with xtype ytype a.
-  exact M.
-  exact N.
-  exact O.
-  Defined.
-  Let reduced: poutput u.
-  apply kV with xtype ytype a.
-  exact M.
-  intro x.
-  apply P.
-  apply N.
-  exact x.
-  intro y.
-  apply P.
-  apply O.
-  exact y.
-  Defined.
-  Axiom p8: orig = reduced.
-  Hint Resolve p8.
-End p8.
-
-Section p9.
-  (* implement *)
-End p9.
 
 (* implement 10, 11, 12, 13, 15, 16, 17 *)
   
@@ -571,14 +439,22 @@ Lemma disj_distr:
   intro sem.
   apply veeE with (embed L) (embed M).
   exact sem.
-  apply mp.
   intro l.
+  apply bind with L.
+  exact l.
+  clear l.
+  intro l.
+  apply ret.
   left.
   exact l.
-  apply mp.
-  intro r.
+  intro m.
+  apply bind with M.
+  exact m.
+  clear m.
+  intro m.
+  apply ret.
   right.
-  exact r.
+  exact m.
 Defined.
 
 Lemma simplerKvee:

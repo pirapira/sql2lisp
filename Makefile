@@ -94,7 +94,7 @@ HTMLFILES:=$(VFILES:.v=.html)
 GHTMLFILES:=$(VFILES:.v=.g.html)
 
 all: $(VOFILES) extracted.hs
-extracted.hs: $(VOFILES)
+extracted.hs: $(VOFILES) header.hs head.hs
 	cat header.hs > extracted.hs
 	coqc extraction.v | tail -n +5 >> extracted.hs
 spec: $(VIFILES)
