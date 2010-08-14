@@ -29,6 +29,8 @@ import Prelude
 
 import Control.Concurrent.MVar
 
+import System.IO.Unsafe
+
 -- |
 -- NVar behaves differently than a normal 'MVar':
 -- 
@@ -48,11 +50,12 @@ newNVar :: IO (NVar a)
 newNVar = newMVar Nothing >>= \mvar -> return $ NVar mvar
 
 -- |Non-blocking read.
-readNVar :: NVar a -> IO (Maybe a)
-readNVar (NVar svar) = do
-   val <- takeMVar svar
-   putMVar svar val
-   return val
+readNVar :: NVar a -> (Maybe a)
+readNVar (NVar svar) = unsafePerformIO
+    (do
+      val <- takeMVar svar
+      putMVar svar val
+      return val)
 
 -- |Write a value if empty. Otherwise, complain.
 writeNVar :: NVar a -> a -> IO ()

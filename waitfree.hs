@@ -16,7 +16,7 @@ threadPut :: NVar Int -> IO ()
 threadPut oneWait = randomDelay >>= \wait -> writeNVar oneWait wait
 
 threadGet :: NVar Int -> String -> String -> IO ()
-threadGet twoWait myName peerName = readNVar twoWait >>=
+threadGet twoWait myName peerName = return (readNVar twoWait) >>=
                        \wait ->
                            putStrLn $ myName ++ ": " ++ peerName ++ " halted for at least "
                                         ++ show wait ++ "ms."
