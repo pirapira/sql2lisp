@@ -3,22 +3,76 @@ Parameter agent : Set.
 
 Require Import List.
 
-Parameter U : Type.
+Parameter U : Set. (* World *)
 Parameter current: U.
 
-Definition o:= U -> Set.
+Definition o:= U -> Set * U.
 
 (* Syntax *)
-Definition embed (S:Set) (_:U) := S.
+Definition embed: Set -> o.
+intros S u.
+split.
+exact S.
+exact u.
+Defined.
 
 Parameter knowledge : agent -> o -> o.
 
-Definition vee (phi:o) (psi:o) (u:U): Set :=
-  (sum (phi u)(psi u)).
-Definition wedge (phi:o) (psi:o) (u:U): Set :=
-  (prod (phi u)(psi u)).
-Definition supset (phi:o) (psi:o) (u:U): Set :=
-  (phi u) -> (psi u).
+Definition content: o->U->Set.
+intros phi u.
+assert (Set * U).
+exact (phi u).
+elim X.
+intros SS t.
+exact SS.
+Defined.
+
+Definition vee: o->o->o.
+intros a b.
+intro u.
+split.
+exact (sum (content a u) (content b u)).
+apply u.
+Defined.
+
+Definition example: Set.
+assert o.
+exact (embed nat).
+assert (Set * U).
+apply X.
+exact current.
+elim X0.
+intros x no.
+exact x.
+Defined.
+
+Definition num: example.
+exact 0.
+Defined.
+
+Extraction Language Haskell.
+Extract Constant U => "IO ()".
+Recursive Extraction num.
+
+Definition wedge: o->o->o.
+intros a b.
+intro u.
+split.
+exact (sum (content a u) (content b u)).
+apply u.
+Defined.
+
+Definition vee: o->o->o.
+intros a b.
+intro u.
+split.
+exact (sum (content a u) (content b u)).
+apply u.
+Defined.
+
+
+
+
 
 Require Import Coq.Sets.Uniset.
 Definition ff (u:U) := Emptyset.
