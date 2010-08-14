@@ -41,29 +41,27 @@ import Control.Concurrent.MVar
 
 -- TODO: if join operation is there, it does not have to be (Ord)
 
-data (Ord a) => NVar a = NVar (MVar a)
+data NVar a = NVar (MVar (Maybe a))
 
 -- |Build a 'SampleVar' with an initial value.
-newNVar :: (Ord a) => a -> IO (NVar a)
-newNVar v = newMVar v >>= \mvar -> return $ NVar mvar
+newNVar :: IO (NVar a)
+newNVar = newMVar Nothing >>= \mvar -> return $ NVar mvar
 
 -- |Non-blocking read.
-readNVar :: (Ord a) => NVar a -> IO a
+readNVar :: NVar a -> IO (Maybe a)
 readNVar (NVar svar) = do
---
--- filled => make empty and grab sample
--- not filled => try to grab value, empty when read val.
---
    val <- takeMVar svar
    putMVar svar val
    return val
 
--- |Write a value into the 'NVar' if the new value is larger.
-writeNVar :: (Ord a) => NVar a -> a -> IO ()
+-- |Write a value if empty. Otherwise, complain.
+writeNVar :: NVar a -> a -> IO ()
 writeNVar (NVar svar) v = do
 --
 -- filled => overwrite
 -- not filled => fill, write val
 --
    val <- takeMVar svar
-   putMVar svar (max val v)
+   case val of
+     Nothing -> putMVar svar (Just v)
+     Just _ -> Prelude.error "attempt to write a value to full MVar"
