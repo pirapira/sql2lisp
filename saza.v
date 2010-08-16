@@ -245,6 +245,25 @@ Definition E (r:RunT) := E_inner r (InitialConf r).
 (* reading later:
    now thinking how epistemic logic applies *)
 
+(* public record is may be finite as well as infinite *)
+
+CoInductive Vhis :Set :=
+  | HNil
+  | HCons: V -> Vhis -> Vhis.
+
+CoFixpoint Pub_inner (procid: nat) (s: Stream SysConf) :=
+  match s with
+    Cons conf later =>
+    
+
+Section computation.
+
+Variable D: Set.
+
+
+
+End computation.
+
 
 
 
@@ -266,6 +285,7 @@ I_a : (nat -> I) -> I -> Prop :=
 
 *)
 
+(* S can be set by the protocol *)
 
 (*
 K_a I_a: (nat -> I) -> (list nat) * I -> Prop :=
@@ -274,6 +294,10 @@ b = ([a], init a) <- this should be a signature-like something...
 
 外側で与えるしかないのかもしれない．
 たとえば，update関数を変更して，署名型にしてしまったりとか．
+
+
+forall (sign: nat -> Set -> Set),
+ will be useful in the same way as ST schedule.
    *)
 
 (* what about wedge, supset?? *)
