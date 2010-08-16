@@ -29,7 +29,7 @@ Section model.
   Defined.
 
   (* initial state *)
-  Definition eType := nat -> S.
+  Definition eType := I -> nat -> S.
 
   (* written value *)
   Definition W:= S -> V.
@@ -39,7 +39,7 @@ Section model.
 
   (* protocol *)
   Open Local Scope type_scope.
-  Definition Protocol := S * V * eType * W * U.
+  Definition Protocol := eType * W * U.
 
   (* state configuration *)
   Definition SysConf := (nat -> S) * (nat ->Vs).
@@ -212,6 +212,99 @@ Defined.
         
 Definition PartialRunT := Protocol * (nat -> I) * FragmentT.
 
+Print ScheduleT.
+
+CoFixpoint E_inner (r: RunT) (C: SysConf) : Stream SysConf :=
+  match r with
+    ((p, init), Cons sch scl) =>
+    Cons C (E_inner r (update p C sch))
+  end.
+
+Definition InitialConf: RunT -> SysConf.
+intro run.
+destruct run as [protocol _].
+destruct protocol as [protocol init].
+destruct protocol as [protocol _].
+destruct protocol as [e _].
+split.
+intro procid.
+exact (
+  if NS.mem procid P
+    then
+      (e (init procid) procid)
+    else 
+      boringS).
+intro address.
+exact nil.
+Defined.
+
+Definition E (r:RunT) := E_inner r (InitialConf r).
+
+(* define E for PartialRun *)
+
+(* reading later:
+   now thinking how epistemic logic applies *)
 
 
 
+
+
+
+
+Definition formula_sem :=
+  
+
+Definition Atom := (nat -> I) -> D -> Prop.
+
+(* input -> output -> is_it_success? *)
+
+(* I_a 
+no semantics:
+
+I_a : (nat -> I) -> I -> Prop :=
+  init a = b
+
+*)
+
+
+(*
+K_a I_a: (nat -> I) -> (list nat) * I -> Prop :=
+
+b = ([a], init a) <- this should be a signature-like something...
+
+外側で与えるしかないのかもしれない．
+たとえば，update関数を変更して，署名型にしてしまったりとか．
+   *)
+
+(* what about wedge, supset?? *)
+
+(* wedge ,
+   original (O0, R0)  (O1, R1) ->
+   (O0 * O1, left -> R0, right -> R1)
+*)
+
+(* supset,
+   original (O0, R0) (O1, R1) ->
+   Km p -> Km q or Km p -> Kmq
+
+   this can be deduced from schedule.
+
+   Ka p -> Kb q || Kb q -> Ka p
+   is not available in general?
+
+   this disjunction seems deducible from schedule.
+
+   yes. Every Ka is behind Km thus this is OK.
+*)
+
+
+(*
+   difficulty:
+   what is the meaning for
+   p q r s |- t ?
+*)
+
+
+Definition realize (p:protocol) (a:Atom) :=
+  forall i:(nat->I) s:schedule
+    reoijojo.
