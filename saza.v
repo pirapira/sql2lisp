@@ -96,10 +96,29 @@ Section model.
     Is_true (NatSet.subset (hd s) b) -> Sigma b (tl s) -> Sigma b s.
   CoInductive Active (s: ScheduleT) (p :nat) : Prop :=
     active:
-    Is_true (NatSet.mem p (hd s)) \/ Active (tl s) p -> Active s p.
+    Is_true (In p (hd s)) \/ Active (tl s) p -> Active s p.
 (* I don't know whether these definitions are used later, but still *)
   CoInductive Inactive (s: ScheduleT) (p: nat) : Prop :=
     inactive:
-    ~Is_true (NatSet.mem p (hd s)) /\ Inactive p s -> Inactive p s.
+    ~Is_true (In p (hd s)) /\ Inactive s p -> Inactive s p.
+CoInductive NonFaulty (s: ScheduleT) (p: nat) : Prop :=
+  nonfaulty:
+  Active s p -> NonFaulty (tl s) p -> NonFaulty s p.
+CoInductive Faulty (s: ScheduleT) (p: nat) : Prop :=
+  faulty:
+  Inactive s p \/ Faulty (tl s) p -> Faulty s p.
+
+Lemma observe: forall (b: NatSet.t) (s: ScheduleT) (p: nat),
+  Sigma b s <-> (Active s p -> Is_true (NatSet.mem p b)).
+intros b s p.
+split.
+intro sig.
+intro act.
+case act.
+intro pre.
+case pre.
+clear pre.
+intro pre.
+compute [Is_true].
 
 
