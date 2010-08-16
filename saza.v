@@ -272,10 +272,9 @@ CoInductive Vhis :Set :=
   | HNil
   | HCons: V -> Vhis -> Vhis.
 
-CoFixpoint Pub_inner (procid: nat) (s: Stream SysConf) :=
-  match s with
-    Cons conf later =>
-    
+CoFixpoint Pub (procid: nat) (r: RunT): Vhis :=
+
+(* D should be defined in a rigorous manner *)  
 
 Section computation.
 
