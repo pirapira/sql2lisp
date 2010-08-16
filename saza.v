@@ -91,20 +91,28 @@ Section model.
 
 (* Now, let's read the coinduction part of the Coq'Art book *)
   Require Import Streams.
-  Definition ScheduleT := Stream NS.t.
-  CoInductive IsSchedule (s: ScheduleT) :Prop:=
-    isschedule:
-    is_block (hd s) -> IsSchedule (tl s) -> IsSchedule s.
+  
+  Definition ScheduleT := Stream (NS.t * NS.t).
+  (* the second element of the tuple shows the set of active processes *)
+
   CoInductive Sigma (b: NS.t) (s: ScheduleT): Prop :=
     sigma:
-    Sigma b (tl s) -> (NS.Subset (hd s) b) -> Sigma b s.
+    Sigma b (tl s) -> (NS.Subset (fst (hd s)) b) -> Sigma b s.
   Inductive Active (s: ScheduleT) (p :nat) : Prop :=
-    | here: (NS.In p (hd s)) -> Active s p
+    | here: (NS.In p (fst (hd s))) -> Active s p
     | later: Active (tl s) p -> Active s p.
 (* I don't know whether these definitions are used later, but still *)
+
+  CoInductive IsSchedule (s: ScheduleT) :Prop:=
+    isschedule:
+    is_block (fst (hd s)) ->
+    (forall p:nat,
+      Active s p <-> NS.In p (snd (hd s)))
+    -> IsSchedule (tl s) -> IsSchedule s.
+
   CoInductive Inactive (s: ScheduleT) (p: nat) : Prop :=
     inactive:
-Inactive (tl s) p -> ~(NS.In p (hd s)) -> Inactive s p.
+Inactive (tl s) p -> ~(NS.In p (fst (hd s))) -> Inactive s p.
 CoInductive NonFaulty (s: ScheduleT) (p: nat) : Prop :=
   nonfaulty:
   Active s p -> NonFaulty (tl s) p -> NonFaulty s p.
@@ -122,7 +130,7 @@ intro sig.
 intro p.
 intro act.
 induction act.
-apply in_subset with (hd s).
+apply in_subset with (fst (hd s)).
 exact H.
 case sig.
 intros one two.
@@ -146,6 +154,7 @@ apply observe.
 case sch.
 intros irr.
 clear irr.
+intro no.
 intro lsch.
 exact lsch.
 intros p tlpre.
@@ -182,10 +191,22 @@ match s with
 | cons h ta => ~ (NS.In p h) /\  ActiveF ta p
 end.
 
+Fixpoint NS_from_Fragment (s: FragmentT) : NS.t :=
+  match s with
+    | nil => empty
+    | cons hd tal => NS.union hd (NS_from_Fragment tal)
+  end.
+
+Definition extend_active (t:ScheduleT) (s: FragmentT) :=
+  match t with
+    Cons (_, tactive) _ =>
+    union tactive (NS_from_Fragment s)
+  end.
+
 Fixpoint extension (s: FragmentT) (t: ScheduleT): ScheduleT :=
   match s with
     | nil => t
-    | cons h ta => Cons h (extension ta t)
+    | cons h ta => Cons (h, extend_active t s) (extension ta t)
   end.
 
 Fixpoint is_prefix (s: FragmentT) (t: ScheduleT): Prop :=
