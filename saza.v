@@ -161,8 +161,47 @@ apply pre.
 exact H.
 Qed.
 
+Definition FragmentT := list NS.t.
+
+Fixpoint Phi (b: NS.t) (s: FragmentT): Prop :=
+match s with
+| nil => True
+| cons h ta => NS.Subset b h /\  Phi b ta
+end.
+
+Fixpoint ActiveF (s: FragmentT) (p: nat) : Prop :=
+match s with
+| nil => False
+| cons h ta => NS.In p h \/  ActiveF ta p
+end.
+
+Fixpoint InactiveF (s: FragmentT) (p: nat) : Prop :=
+match s with
+| nil => True
+| cons h ta => ~ (NS.In p h) /\  ActiveF ta p
+end.
+
+Fixpoint extension (s: FragmentT) (t: ScheduleT): ScheduleT :=
+  match s with
+    | nil => t
+    | cons h ta => Cons h (extension ta t)
+  end.
+
+Fixpoint is_prefix (s: FragmentT) (t: ScheduleT): Prop :=
+  match s with
+    | nil => True
+    | cons sh sl =>
+      match t with
+        Cons th tll => sh = th /\ is_prefix sl tll
+      end
+  end.
 
 
+
+        
+  
+
+(* I don't know whether these definitions are used later, but still *)
 
 
 
