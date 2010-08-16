@@ -1,6 +1,10 @@
 Require Import FSets.
 
-Module NatSet := FSetList.Make (Nat_as_OT).
+
+Module NS := FSetList.Make (Nat_as_DT).
+Import NS.
+Module NSProp := WProperties_fun (Nat_as_DT)(NS).
+Import NSProp.
 
 Section model.
 
@@ -39,9 +43,8 @@ Section model.
   (* state configuration *)
   Definition SysConf := (nat -> S) * (nat ->Vs).
 
-  Require Import Bool.
   Definition is_block (b: NatSet.t) :=
-    Is_true (NatSet.subset b P) /\ ~ (Is_true (NatSet.is_empty b)).
+    (NatSet.Subset b P) /\ ~ (NatSet.Empty b).
 
   Definition update: Protocol -> SysConf -> NatSet.t -> SysConf.
   intro protocol.
@@ -93,14 +96,14 @@ Section model.
     is_block (hd s) -> IsSchedule (tl s) -> IsSchedule s.
   CoInductive Sigma (b: NatSet.t) (s: ScheduleT): Prop :=
     sigma:
-    Is_true (NatSet.subset (hd s) b) -> Sigma b (tl s) -> Sigma b s.
+    (NatSet.Subset (hd s) b) -> Sigma b (tl s) -> Sigma b s.
   CoInductive Active (s: ScheduleT) (p :nat) : Prop :=
     active:
-    Is_true (In p (hd s)) \/ Active (tl s) p -> Active s p.
+    (NatSet.In p (hd s)) \/ Active (tl s) p -> Active s p.
 (* I don't know whether these definitions are used later, but still *)
   CoInductive Inactive (s: ScheduleT) (p: nat) : Prop :=
     inactive:
-    ~Is_true (In p (hd s)) /\ Inactive s p -> Inactive s p.
+    (NatSet.In p (hd s)) /\ Inactive s p -> Inactive s p.
 CoInductive NonFaulty (s: ScheduleT) (p: nat) : Prop :=
   nonfaulty:
   Active s p -> NonFaulty (tl s) p -> NonFaulty s p.
@@ -109,7 +112,7 @@ CoInductive Faulty (s: ScheduleT) (p: nat) : Prop :=
   Inactive s p \/ Faulty (tl s) p -> Faulty s p.
 
 Lemma observe: forall (b: NatSet.t) (s: ScheduleT) (p: nat),
-  Sigma b s <-> (Active s p -> Is_true (NatSet.mem p b)).
+  Sigma b s <-> (Active s p -> (NatSet.In p b)).
 intros b s p.
 split.
 intro sig.
@@ -119,6 +122,14 @@ intro pre.
 case pre.
 clear pre.
 intro pre.
-compute [Is_true].
+case sig.
+intro pre2.
+intro irr.
+clear irr.
+clear sig V I boringS S P act.
+apply NatProp.in_subset.
+
+
+
 
 
