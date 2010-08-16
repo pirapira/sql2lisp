@@ -10,6 +10,7 @@ Section model.
 
   (* input domain for each process *)
   Variable I: Set.
+  Variable boringI: I.
 
   (* processes, should be finite *)
 
@@ -28,7 +29,7 @@ Section model.
   Defined.
 
   (* initial state *)
-  Definition E:= nat -> S.
+  Definition eType := nat -> S.
 
   (* written value *)
   Definition W:= S -> V.
@@ -38,7 +39,7 @@ Section model.
 
   (* protocol *)
   Open Local Scope type_scope.
-  Definition Protocol := S * V * E * W * U.
+  Definition Protocol := S * V * eType * W * U.
 
   (* state configuration *)
   Definition SysConf := (nat -> S) * (nat ->Vs).
@@ -137,7 +138,7 @@ exact one.
 generalize sch.
 generalize s.
 clear s sch.
-clear boringS S I.
+clear boringS S boringI I.
 cofix.
 intros s sch pre.
 apply sigma.
@@ -197,11 +198,20 @@ Fixpoint is_prefix (s: FragmentT) (t: ScheduleT): Prop :=
   end.
 
 
+Notation "'[' J ']'" := (const J).
 
+Notation "'[[' p ']]'" := (const (singleton p)).
+
+Definition RunT := Protocol * (nat -> I) * ScheduleT.
+
+Definition is_run (r: RunT): Prop.
+intro r.
+destruct r.
+exact (IsSchedule s).
+Defined.
         
-  
+Definition PartialRunT := Protocol * (nat -> I) * FragmentT.
 
-(* I don't know whether these definitions are used later, but still *)
 
 
 
