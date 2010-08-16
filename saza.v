@@ -13,7 +13,7 @@ Section model.
 
   (* processes, should be finite *)
 
-  Variable P: NatSet.t.
+  Variable P: NS.t.
 
   (* local states for each process *)
   Variable S: Set.
@@ -24,7 +24,7 @@ Section model.
   Require Import List.
   Definition Vs := list V.
   Definition boringVs : Vs.
-  exact (nil).
+  exact nil.
   Defined.
 
   (* initial state *)
@@ -43,18 +43,18 @@ Section model.
   (* state configuration *)
   Definition SysConf := (nat -> S) * (nat ->Vs).
 
-  Definition is_block (b: NatSet.t) :=
-    (NatSet.Subset b P) /\ ~ (NatSet.Empty b).
+  Definition is_block (b: NS.t) :=
+    (NS.Subset b P) /\ ~ (NS.Empty b).
 
-  Definition update: Protocol -> SysConf -> NatSet.t -> SysConf.
+  Definition update: Protocol -> SysConf -> NS.t -> SysConf.
   intro protocol.
   intro initial.
   intro b.
   split.
   intro p.
-  generalize (NatSet.mem p P).
+  generalize (NS.mem p P).
   intro process.
-  generalize (NatSet.mem p b).
+  generalize (NS.mem p b).
   intro member.
   induction protocol as [protocol u].
   induction initial as [initialS initialM].
@@ -68,9 +68,9 @@ Section model.
          end)
     end).
   intro address.
-  generalize (NatSet.mem address P).
+  generalize (NS.mem address P).
   intro in_range.
-  generalize (NatSet.mem address b).
+  generalize (NS.mem address b).
   intro updated.
   induction protocol as [protocol u].
   clear u.
@@ -90,44 +90,77 @@ Section model.
 
 (* Now, let's read the coinduction part of the Coq'Art book *)
   Require Import Streams.
-  Definition ScheduleT := Stream NatSet.t.
+  Definition ScheduleT := Stream NS.t.
   CoInductive IsSchedule (s: ScheduleT) :Prop:=
     isschedule:
     is_block (hd s) -> IsSchedule (tl s) -> IsSchedule s.
-  CoInductive Sigma (b: NatSet.t) (s: ScheduleT): Prop :=
+  CoInductive Sigma (b: NS.t) (s: ScheduleT): Prop :=
     sigma:
-    (NatSet.Subset (hd s) b) -> Sigma b (tl s) -> Sigma b s.
-  CoInductive Active (s: ScheduleT) (p :nat) : Prop :=
-    active:
-    (NatSet.In p (hd s)) \/ Active (tl s) p -> Active s p.
+    Sigma b (tl s) -> (NS.Subset (hd s) b) -> Sigma b s.
+  Inductive Active (s: ScheduleT) (p :nat) : Prop :=
+    | here: (NS.In p (hd s)) -> Active s p
+    | later: Active (tl s) p -> Active s p.
 (* I don't know whether these definitions are used later, but still *)
   CoInductive Inactive (s: ScheduleT) (p: nat) : Prop :=
     inactive:
-    (NatSet.In p (hd s)) /\ Inactive s p -> Inactive s p.
+Inactive (tl s) p -> ~(NS.In p (hd s)) -> Inactive s p.
 CoInductive NonFaulty (s: ScheduleT) (p: nat) : Prop :=
   nonfaulty:
   Active s p -> NonFaulty (tl s) p -> NonFaulty s p.
-CoInductive Faulty (s: ScheduleT) (p: nat) : Prop :=
-  faulty:
-  Inactive s p \/ Faulty (tl s) p -> Faulty s p.
+Inductive Faulty (s: ScheduleT) (p: nat) : Prop :=
+  | nolater: Inactive s p -> Faulty s p
+  | sometime: Faulty (tl s) p -> Faulty s p.
 
-Lemma observe: forall (b: NatSet.t) (s: ScheduleT) (p: nat),
-  Sigma b s <-> (Active s p -> (NatSet.In p b)).
-intros b s p.
+Lemma observe: forall (b: NS.t) (s: ScheduleT),
+  IsSchedule s ->
+  (Sigma b s <-> (forall p:nat, Active s p -> (NS.In p b))).
+intros b s.
+intro sch.
 split.
 intro sig.
+intro p.
 intro act.
-case act.
-intro pre.
-case pre.
-clear pre.
-intro pre.
+induction act.
+apply in_subset with (hd s).
+exact H.
 case sig.
-intro pre2.
+intros one two.
+exact two.
+apply IHact.
+clear IHact.
+case sch.
 intro irr.
+trivial.
+case sig.
+intros one two.
+exact one.
+generalize sch.
+generalize s.
+clear s sch.
+clear boringS S I.
+cofix.
+intros s sch pre.
+apply sigma.
+apply observe.
+case sch.
+intros irr.
 clear irr.
-clear sig V I boringS S P act.
-apply NatProp.in_subset.
+intro lsch.
+exact lsch.
+intros p tlpre.
+apply pre.
+apply later.
+exact tlpre.
+compute [Subset].
+intro p.
+intro inhead.
+assert (Active s p).
+apply here.
+exact inhead.
+apply pre.
+exact H.
+Qed.
+
 
 
 
