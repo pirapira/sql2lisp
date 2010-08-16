@@ -85,3 +85,21 @@ Section model.
     end).
   Defined.
 
+(* Now, let's read the coinduction part of the Coq'Art book *)
+  Require Import Streams.
+  Definition ScheduleT := Stream NatSet.t.
+  CoInductive IsSchedule (s: ScheduleT) :Prop:=
+    isschedule:
+    is_block (hd s) -> IsSchedule (tl s) -> IsSchedule s.
+  CoInductive Sigma (b: NatSet.t) (s: ScheduleT): Prop :=
+    sigma:
+    Is_true (NatSet.subset (hd s) b) -> Sigma b (tl s) -> Sigma b s.
+  CoInductive Active (s: ScheduleT) (p :nat) : Prop :=
+    active:
+    Is_true (NatSet.mem p (hd s)) \/ Active (tl s) p -> Active s p.
+(* I don't know whether these definitions are used later, but still *)
+  CoInductive Inactive (s: ScheduleT) (p: nat) : Prop :=
+    inactive:
+    ~Is_true (NatSet.mem p (hd s)) /\ Inactive p s -> Inactive p s.
+
+
