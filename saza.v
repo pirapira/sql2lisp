@@ -214,7 +214,7 @@ Fixpoint is_prefix (s: FragmentT) (t: ScheduleT): Prop :=
     | nil => True
     | cons sh sl =>
       match t with
-        Cons th tll => sh = th /\ is_prefix sl tll
+        Cons (th, _) tll => sh = th /\ is_prefix sl tll
       end
   end.
 
@@ -237,7 +237,7 @@ Print ScheduleT.
 
 CoFixpoint E_inner (r: RunT) (C: SysConf) : Stream SysConf :=
   match r with
-    ((p, init), Cons sch scl) =>
+    ((p, init), Cons (sch, _) scl) =>
     Cons C (E_inner r (update p C sch))
   end.
 
