@@ -253,8 +253,8 @@ CoInductive Vhis :Set :=
 
 CoFixpoint Pub_inner (procid: nat) (s: Stream SysConf) :=
   match s with
-    Cons conf later =>
-    
+    Cons conf late => HCons (boringV) (Pub_inner procid late) ???
+  end.
 
 Section computation.
 
