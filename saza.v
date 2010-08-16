@@ -22,6 +22,7 @@ Section model.
 
   (* type of values written to and read from a register *)
   Variable  V: Set.
+  Variable boringV: V. (* should be eliminated *)
   Require Import List.
   Definition Vs := list V.
   Definition boringVs : Vs.
@@ -247,18 +248,28 @@ Definition E (r:RunT) := E_inner r (InitialConf r).
 
 (* public record is may be finite as well as infinite *)
 
-CoInductive Vhis :Set :=
-  | HNil
-  | HCons: V -> Vhis -> Vhis.
-
-CoFixpoint Pub_inner (procid: nat) (s: Stream SysConf) :=
+CoFixpoint Pub_inner (procid: nat) (s: Stream SysConf): Stream V :=
   match s with
-    Cons conf late => HCons (boringV) (Pub_inner procid late) ???
+    Cons conf late => Cons (boringV) (Pub_inner procid late)
   end.
+(* this is wrong, but for now, let's what happens after this *)
+
+Definition Pub (procid: nat) (r: RunT): Stream V :=
+  Pub_inner procid (E r).
 
 Section computation.
 
-Variable D: Set.
+Variable D: V -> bool.
+
+CoFixpoint d (procid: nat) (vhis: Stream V): V :=
+  match vhis with
+    Cons header tailer =>
+    match (D header) with
+      true => header
+      | false => d procid tailer
+    end
+  end.
+    
 
 
 
