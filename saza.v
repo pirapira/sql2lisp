@@ -37,8 +37,7 @@ Section model.
   Definition Protocol := S * V * E * W * U.
 
   (* state configuration *)
-  Definition SysConf := nat -> S * Vs.
-  Definition boringConf: S * Vs := (boringS, boringVs).
+  Definition SysConf := (nat -> S) * (nat ->Vs).
 
   Require Import Bool.
   Definition is_block (b: NatSet.t) :=
@@ -48,27 +47,41 @@ Section model.
   intro protocol.
   intro initial.
   intro b.
+  split.
   intro p.
   generalize (NatSet.mem p P).
   intro process.
   generalize (NatSet.mem p b).
   intro member.
   induction protocol as [protocol u].
-  induction protocol as [protocol w].
+  induction initial as [initialS initialM].
   exact (
     match process with
-      | false => boringConf
+      | false => boringS
       | true  =>
         (match member with
-           | true => (u (s p) m
-           | false => s p
+           | true => (u (initialS p) initialM)
+           | false => initialS p
          end)
     end).
-    
-  
-  
-
-
-
-
+  intro address.
+  generalize (NatSet.mem address P).
+  intro in_range.
+  generalize (NatSet.mem address b).
+  intro updated.
+  induction protocol as [protocol u].
+  clear u.
+  induction protocol as [protocol w].
+  clear protocol.
+  induction initial as [initialS initialM].
+  exact (
+    match in_range with
+      | false => boringVs
+      | true =>
+        match updated with
+          | false => initialM address
+          | true => cons (w (initialS address)) (initialM address)
+        end
+    end).
+  Defined.
 
